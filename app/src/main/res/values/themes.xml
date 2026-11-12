@@ -1,0 +1,49 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.ApkBookingFIlm" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/maroon_primary</item>
+        <item name="colorPrimaryDark">@color/maroon_dark</item>
+        <item name="colorSecondary">@color/maroon_light</item>
+        <item name="android:windowBackground">@color/bg_cream</item>
+        <item name="android:statusBarColor">@color/bg_cream</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">@color/bg_white</item>
+    </style>
+
+    <style name="Theme.ApkBookingFIlm" parent="Base.Theme.ApkBookingFIlm" />
+
+    <!-- Custom Button Styles -->
+    <style name="PrimaryMaroonButton" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@color/maroon_primary</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textStyle">bold</item>
+        <item name="cornerRadius">24dp</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.05</item>
+    </style>
+
+    <style name="OutlineMaroonButton" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="strokeColor">@color/maroon_primary</item>
+        <item name="strokeWidth">1.5dp</item>
+        <item name="android:textColor">@color/maroon_primary</item>
+        <item name="android:textStyle">bold</item>
+        <item name="cornerRadius">24dp</item>
+    </style>
+
+    <!-- Bottom Sheet Dialog Theme -->
+    <style name="CustomBottomSheetDialog" parent="Theme.Material3.Light.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/CustomBottomSheet</item>
+    </style>
+
+    <style name="CustomBottomSheet" parent="Widget.Material3.BottomSheet">
+        <item name="shapeAppearance">@style/ShapeAppearance.App.LargeComponent</item>
+        <item name="backgroundTint">@color/bg_white</item>
+    </style>
+
+    <style name="ShapeAppearance.App.LargeComponent" parent="ShapeAppearance.Material3.LargeComponent">
+        <item name="cornerSizeTopLeft">28dp</item>
+        <item name="cornerSizeTopRight">28dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
+    </style>
+</resources>

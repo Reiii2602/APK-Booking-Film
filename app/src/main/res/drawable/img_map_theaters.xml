@@ -1,0 +1,40 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="360dp"
+    android:height="140dp"
+    android:viewportWidth="360"
+    android:viewportHeight="140">
+  <!-- Map Background -->
+  <path
+      android:fillColor="#F6EFE8"
+      android:pathData="M0,0h360v140h-360z"/>
+  <!-- Secondary Blocks -->
+  <path
+      android:fillColor="#ECE4DA"
+      android:pathData="M210,65h110v45h-110z M25,10h120v35h-120z M25,55h120v35h-120z"/>
+  <!-- Street Grids (White Roads) -->
+  <path
+      android:strokeColor="#FFFFFF"
+      android:strokeWidth="8"
+      android:pathData="M0,50 L360,50 M0,95 L360,95 M150,0 L150,140 M210,0 L210,140 M75,0 L75,140 M280,0 L280,140"/>
+  <!-- Diagonal Avenue -->
+  <path
+      android:strokeColor="#FFFFFF"
+      android:strokeWidth="10"
+      android:pathData="M0,30 L360,85"/>
+  <!-- User Current Location (Black Dot) -->
+  <path
+      android:fillColor="#1C1917"
+      android:pathData="M156,58m-4,0a4,4 0 1,1 8,0a4,4 0 1,1 -8,0"/>
+  <!-- Pin 1 -->
+  <path
+      android:fillColor="#781D2E"
+      android:pathData="M115,45m-9,0a9,9 0 1,1 18,0a9,9 0 1,1 -18,0"/>
+  <!-- Pin 2 -->
+  <path
+      android:fillColor="#781D2E"
+      android:pathData="M190,95m-9,0a9,9 0 1,1 18,0a9,9 0 1,1 -18,0"/>
+  <!-- Pin 3 -->
+  <path
+      android:fillColor="#781D2E"
+      android:pathData="M260,40m-9,0a9,9 0 1,1 18,0a9,9 0 1,1 -18,0"/>
+</vector>
