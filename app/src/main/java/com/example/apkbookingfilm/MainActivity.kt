@@ -90,12 +90,20 @@ class MainActivity : AppCompatActivity() {
             if (!repository.isLoggedIn()) {
                 val existing = supportFragmentManager.findFragmentByTag(LoginBottomSheet.TAG)
                 if (existing == null) {
-                    val bottomSheet = LoginBottomSheet {
-                        val currentFrag = supportFragmentManager.findFragmentById(R.id.containerContent)
-                        if (currentFrag is ProfileFragment) {
-                            currentFrag.updateProfileUI()
+                    val bottomSheet = LoginBottomSheet(
+                        onLoginSuccess = {
+                            val currentFrag = supportFragmentManager.findFragmentById(R.id.containerContent)
+                            if (currentFrag is ProfileFragment) {
+                                currentFrag.updateProfileUI()
+                            }
+                        },
+                        onSwitchToRegister = {
+                            val currentFrag = supportFragmentManager.findFragmentById(R.id.containerContent)
+                            if (currentFrag is ProfileFragment) {
+                                currentFrag.showCreateAccountBottomSheet()
+                            }
                         }
-                    }
+                    )
                     bottomSheet.show(supportFragmentManager, LoginBottomSheet.TAG)
                 }
             }

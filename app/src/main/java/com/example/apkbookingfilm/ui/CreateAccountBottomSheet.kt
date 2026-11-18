@@ -11,7 +11,7 @@ import com.example.apkbookingfilm.util.AppToast
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
 class CreateAccountBottomSheet(
-    private val onRegisterSuccess: () -> Unit,
+    private val onRegisterSuccess: () -> Unit = {},
     private val onSwitchToLogin: (() -> Unit)? = null
 ) : BottomSheetDialogFragment() {
 

@@ -50,10 +50,8 @@ jobs:
           tag_name: ${{ steps.ver.outputs.tag }}
           name: "Cinema Booking ${{ steps.ver.outputs.tag }}"
           body: |
-            ✨ Pembaruan Cinema Booking ${{ steps.ver.outputs.tag }}
-
-            Catatan Perubahan:
-            ${{ steps.ver.outputs.msg }}
-
-            Update langsung menimpa aplikasi lama tanpa perlu uninstall, seluruh data dan tiket kamu tetap tersimpan aman.
+            • Peta bioskop interaktif kini bisa digeser bebas & tombol zoom (+ / -) sudah simetris
+            • Menu Buat Akun Baru (Create Account) tersendiri lengkap dengan login Google & Apple
+            • Ikon logo aplikasi pada notifikasi bawah kini tampil bulat rapi
+            • Penjelasan pembaruan aplikasi kini menggunakan bahasa Indonesia yang mudah dipahami
           files: CinemaBooking-${{ steps.ver.outputs.tag }}.apk
