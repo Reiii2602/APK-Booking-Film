@@ -79,7 +79,7 @@ object TmdbApi {
     /** Detail lengkap: durasi, genre, sutradara, pemeran, trailer, rating usia. */
     fun fetchDetail(tmdbId: Int, base: Movie?): Movie? {
         if (tmdbId <= 0) return null
-        val url = "$BASE/movie/$tmdbId?api_key=$API_KEY&language=$LANG&append_to_response=credits,videos,release_dates"
+        val url = "$BASE/movie/$tmdbId?api_key=$API_KEY&language=$LANG&append_to_response=credits,videos,release_dates&include_video_language=en,id,null"
         val body = httpGet(url) ?: return null
         return try {
             parseDetail(JSONObject(body), base)

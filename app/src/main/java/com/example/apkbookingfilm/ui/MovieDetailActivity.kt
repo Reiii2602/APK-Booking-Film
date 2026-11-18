@@ -1,12 +1,24 @@
 package com.example.apkbookingfilm.ui
 
+import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.View
+import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
+import android.webkit.WebSettings
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.apkbookingfilm.R
 import com.example.apkbookingfilm.adapter.CastAdapter
@@ -14,9 +26,12 @@ import com.example.apkbookingfilm.adapter.DateAdapter
 import com.example.apkbookingfilm.adapter.DateItem
 import com.example.apkbookingfilm.data.MovieRepository
 import com.example.apkbookingfilm.databinding.ActivityMovieDetailBinding
+import com.example.apkbookingfilm.databinding.ItemShowtimeCinemaBinding
+import com.example.apkbookingfilm.databinding.ItemShowtimeSlotBinding
 import com.example.apkbookingfilm.model.Cinema
 import com.example.apkbookingfilm.model.Movie
 import com.example.apkbookingfilm.util.TmdbImageLoader
+import com.google.android.material.card.MaterialCardView
 import java.util.Locale
 
 class MovieDetailActivity : AppCompatActivity() {
@@ -27,7 +42,24 @@ class MovieDetailActivity : AppCompatActivity() {
     private var currentMovie: Movie? = null
     private var selectedCinema: Cinema? = null
     private var selectedDate: String = "Fri, 06 Nov"
-    private var selectedTime: String = "19:30"
+    private var selectedTime: String = ""
+    private var selectedFormatFilter: String = "All formats"
+
+    private val castAdapter = CastAdapter(emptyList())
+
+    private data class SlotViewRef(
+        val cinema: Cinema,
+        val time: String,
+        val binding: ItemShowtimeSlotBinding,
+        val card: MaterialCardView
+    )
+    private val slotViewRefs = mutableListOf<SlotViewRef>()
+
+    private val onCityChangedListener = {
+        if (!isFinishing && !isDestroyed) {
+            renderCinemasForSelectedCity()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,22 +67,20 @@ class MovieDetailActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         repository = MovieRepository(this)
+        MovieRepository.addOnCityChangedListener(onCityChangedListener)
 
         val movieId = intent.getStringExtra(EXTRA_MOVIE_ID) ?: "dune-2"
         currentMovie = repository.getMovieById(movieId) ?: repository.movies[0]
-        selectedCinema = repository.cinemas[0]
 
         binding.rvCast.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         binding.rvCast.adapter = castAdapter
 
-        setupViews()
         setupDates()
-        setupCinemaShowtimes()
+        renderCinemasForSelectedCity()
+        setupViews()
         setupListeners()
         loadFullDetail(movieId)
     }
-
-    private val castAdapter = CastAdapter(emptyList())
 
     private fun loadFullDetail(movieId: String) {
         binding.progressDetail.visibility = View.VISIBLE
@@ -85,10 +115,7 @@ class MovieDetailActivity : AppCompatActivity() {
         binding.tvStatusLabel.text = if (movie.isComingSoon) "COMING SOON" else "NOW SHOWING"
         binding.tvTagline.visibility = if (movie.tagline.isNotEmpty()) View.VISIBLE else View.GONE
         binding.tvTagline.text = "\u201C${movie.tagline}\u201D"
-        binding.tvTrailerLabel.text = if (movie.trailerKey.isNotEmpty()) "TONTON TRAILER" else "TRAILER"
-        binding.tvBottomPrice.text = "Rp50.000/adult"
-        binding.tvBottomShowtimeDate.text = "$selectedDate • $selectedTime"
-        binding.tvBottomShowtimeVenue.text = "${selectedCinema?.name ?: "Ambarrukmo XXI"} • IMAX"
+        binding.tvTrailerLabel.text = if (movie.trailerKey.isNotEmpty()) "PUTAR CUPLIKAN" else "CUPLIKAN"
 
         if (movie.cast.isNotEmpty()) {
             binding.tvCastEmpty.visibility = View.GONE
@@ -96,6 +123,7 @@ class MovieDetailActivity : AppCompatActivity() {
             castAdapter.updateList(movie.cast)
         }
 
+        updateBottomBar()
         updateBookmarkIcon()
     }
 
@@ -116,7 +144,6 @@ class MovieDetailActivity : AppCompatActivity() {
     }
 
     private fun setupDates() {
-        // As shown in Image 3: FRI 06 TODAY, SAT 07 NOV, SUN 08 NOV, MON 09 NOV, TUE 10 NOV
         val dateItems = listOf(
             DateItem("FRI", "06", "Fri, 06 Nov", "TODAY"),
             DateItem("SAT", "07", "Sat, 07 Nov", "NOV"),
@@ -130,52 +157,120 @@ class MovieDetailActivity : AppCompatActivity() {
             LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         binding.rvDateSelector.adapter = DateAdapter(dateItems, selectedIndex = 0) { item ->
             selectedDate = item.fullDate
-            binding.tvBottomShowtimeDate.text = "$selectedDate • $selectedTime"
+            updateBottomBar()
         }
     }
 
-    private fun setupCinemaShowtimes() {
-        binding.time11.setOnClickListener {
-            selectedCinema = repository.cinemas[0]
-            selectedTime = "16:00"
-            binding.tvBottomShowtimeDate.text = "$selectedDate • $selectedTime"
-            binding.tvBottomShowtimeVenue.text = "${selectedCinema?.name} • IMAX"
+    private fun renderCinemasForSelectedCity() {
+        val city = repository.getSelectedCity()
+        binding.tvCityDetail.text = city
+        binding.tvFormatFilterDetail.text = "$selectedFormatFilter ⌄"
+
+        val allCityCinemas = repository.getCinemasForCity(city)
+        val filtered = if (selectedFormatFilter == "All formats") {
+            allCityCinemas
+        } else {
+            allCityCinemas.filter { c ->
+                c.formats.any { it.contains(selectedFormatFilter, ignoreCase = true) }
+            }.ifEmpty { allCityCinemas }
         }
 
-        binding.time12.setOnClickListener {
-            selectedCinema = repository.cinemas[0]
-            selectedTime = "19:30"
-            binding.tvBottomShowtimeDate.text = "$selectedDate • $selectedTime"
-            binding.tvBottomShowtimeVenue.text = "${selectedCinema?.name} • IMAX"
+        // Pastikan cinema & jam default terpilih valid
+        if (selectedCinema == null || filtered.none { it.id == selectedCinema?.id }) {
+            selectedCinema = filtered.firstOrNull()
+        }
+        val activeCinema = selectedCinema
+        if (activeCinema != null && (selectedTime.isEmpty() || !activeCinema.showtimes.contains(selectedTime))) {
+            selectedTime = activeCinema.showtimes.getOrNull(1) ?: activeCinema.showtimes.firstOrNull() ?: "19:30"
         }
 
-        binding.time13.setOnClickListener {
-            selectedCinema = repository.cinemas[0]
-            selectedTime = "22:45"
-            binding.tvBottomShowtimeDate.text = "$selectedDate • $selectedTime"
-            binding.tvBottomShowtimeVenue.text = "${selectedCinema?.name} • IMAX"
+        val container = binding.layoutCinemaShowtimes
+        container.removeAllViews()
+        slotViewRefs.clear()
+
+        val inflater = LayoutInflater.from(this)
+        filtered.forEach { cinema ->
+            val cardBinding = ItemShowtimeCinemaBinding.inflate(inflater, container, false)
+            cardBinding.tvCinemaName.text = cinema.name
+            cardBinding.tvCinemaDistance.text = cinema.distance
+            cardBinding.tvCinemaAddress.text = cinema.location
+            cardBinding.tvCinemaFormatPrimary.text = cinema.formats.getOrNull(0) ?: "REGULAR"
+            val secFormat = cinema.formats.getOrNull(1)
+            if (secFormat != null) {
+                cardBinding.tvCinemaFormatSecondary.visibility = View.VISIBLE
+                cardBinding.tvCinemaFormatSecondary.text = secFormat
+            } else {
+                cardBinding.tvCinemaFormatSecondary.visibility = View.GONE
+            }
+
+            val slotsRow = cardBinding.layoutShowtimeSlots
+            slotsRow.removeAllViews()
+            val timesToShow = cinema.showtimes.take(4)
+            timesToShow.forEachIndexed { idx, timeStr ->
+                val slotBinding = ItemShowtimeSlotBinding.inflate(inflater, slotsRow, false)
+                val lp = slotBinding.root.layoutParams as LinearLayout.LayoutParams
+                if (idx == timesToShow.lastIndex) lp.marginEnd = 0
+                slotBinding.root.layoutParams = lp
+
+                slotBinding.tvSlotTime.text = timeStr
+                val ref = SlotViewRef(cinema, timeStr, slotBinding, cardBinding.cardCinemaItem)
+                slotViewRefs.add(ref)
+
+                slotBinding.root.setOnClickListener {
+                    selectedCinema = cinema
+                    selectedTime = timeStr
+                    refreshShowtimeSelectionVisuals()
+                    updateBottomBar()
+                }
+                slotsRow.addView(slotBinding.root)
+            }
+
+            container.addView(cardBinding.root)
         }
 
-        binding.time21.setOnClickListener {
-            selectedCinema = repository.cinemas[1]
-            selectedTime = "15:15"
-            binding.tvBottomShowtimeDate.text = "$selectedDate • $selectedTime"
-            binding.tvBottomShowtimeVenue.text = "${selectedCinema?.name} • RPX"
-        }
+        refreshShowtimeSelectionVisuals()
+        updateBottomBar()
+    }
 
-        binding.time22.setOnClickListener {
-            selectedCinema = repository.cinemas[1]
-            selectedTime = "18:45"
-            binding.tvBottomShowtimeDate.text = "$selectedDate • $selectedTime"
-            binding.tvBottomShowtimeVenue.text = "${selectedCinema?.name} • RPX"
-        }
+    private fun refreshShowtimeSelectionVisuals() {
+        val white = ContextCompat.getColor(this, R.color.white)
+        val peach = ContextCompat.getColor(this, R.color.peach_bg)
+        val chipText = ContextCompat.getColor(this, R.color.chip_text)
+        val muted = ContextCompat.getColor(this, R.color.text_muted)
+        val maroon = ContextCompat.getColor(this, R.color.maroon_primary)
+        val divider = ContextCompat.getColor(this, R.color.divider_line)
+        val density = resources.displayMetrics.density
 
-        binding.time23.setOnClickListener {
-            selectedCinema = repository.cinemas[1]
-            selectedTime = "21:50"
-            binding.tvBottomShowtimeDate.text = "$selectedDate • $selectedTime"
-            binding.tvBottomShowtimeVenue.text = "${selectedCinema?.name} • RPX"
+        slotViewRefs.forEach { ref ->
+            val isSelected = ref.cinema.id == selectedCinema?.id && ref.time == selectedTime
+            val isCinemaSelected = ref.cinema.id == selectedCinema?.id
+            val priceStr = MovieRepository.formatRupiah(ref.cinema.ticketPrice)
+
+            if (isSelected) {
+                ref.binding.root.setBackgroundResource(R.drawable.bg_chip_selected)
+                ref.binding.tvSlotTime.setTextColor(white)
+                ref.binding.tvSlotSub.text = "✓ SELECTED"
+                ref.binding.tvSlotSub.setTextColor(peach)
+                ref.binding.tvSlotSub.paint.isFakeBoldText = true
+            } else {
+                ref.binding.root.setBackgroundResource(R.drawable.bg_chip_unselected)
+                ref.binding.tvSlotTime.setTextColor(chipText)
+                ref.binding.tvSlotSub.text = priceStr
+                ref.binding.tvSlotSub.setTextColor(muted)
+                ref.binding.tvSlotSub.paint.isFakeBoldText = false
+            }
+
+            ref.card.strokeColor = if (isCinemaSelected) maroon else divider
+            ref.card.strokeWidth = ((if (isCinemaSelected) 1.5f else 1f) * density).toInt()
         }
+    }
+
+    private fun updateBottomBar() {
+        val cinema = selectedCinema ?: return
+        val fmt = cinema.formats.firstOrNull() ?: "2D"
+        binding.tvBottomShowtimeDate.text = "$selectedDate • $selectedTime"
+        binding.tvBottomShowtimeVenue.text = "${cinema.name} • $fmt"
+        binding.tvBottomPrice.text = "${MovieRepository.formatRupiah(cinema.ticketPrice)}/adult"
     }
 
     private fun setupListeners() {
@@ -183,17 +278,36 @@ class MovieDetailActivity : AppCompatActivity() {
             finish()
         }
 
+        binding.layoutCityDetail.setOnClickListener {
+            CityPickerDialog {
+                renderCinemasForSelectedCity()
+            }.show(supportFragmentManager, CityPickerDialog.TAG)
+        }
+
+        binding.tvFormatFilterDetail.setOnClickListener {
+            val formats = arrayOf("All formats", "IMAX", "PREMIERE", "DOLBY ATMOS", "4DX", "REGULAR")
+            val checked = formats.indexOf(selectedFormatFilter).coerceAtLeast(0)
+            AlertDialog.Builder(this)
+                .setTitle("Pilih Format Studio")
+                .setSingleChoiceItems(formats, checked) { dialog, which ->
+                    selectedFormatFilter = formats[which]
+                    renderCinemasForSelectedCity()
+                    dialog.dismiss()
+                }
+                .show()
+        }
+
         binding.btnTrailer.setOnClickListener {
             val key = currentMovie?.trailerKey.orEmpty()
             if (key.isEmpty()) {
-                Toast.makeText(this, "Trailer belum tersedia", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Cuplikan trailer belum tersedia untuk film ini", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            try {
-                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:$key")))
-            } catch (_: ActivityNotFoundException) {
-                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=$key")))
-            }
+            playInlineTrailer(key)
+        }
+
+        binding.btnCloseTrailer.setOnClickListener {
+            closeInlineTrailer()
         }
 
         binding.tvFullDetails.setOnClickListener {
@@ -221,10 +335,86 @@ class MovieDetailActivity : AppCompatActivity() {
                 putExtra(SeatSelectionActivity.EXTRA_MOVIE, movie)
                 putExtra(SeatSelectionActivity.EXTRA_CINEMA, cinema)
                 putExtra(SeatSelectionActivity.EXTRA_DATE, selectedDate)
-                putExtra(SeatSelectionActivity.EXTRA_TIME, selectedTime)
+                putExtra(SeatSelectionActivity.EXTRA_TIME, selectedTime.ifEmpty { "19:30" })
             }
             startActivity(intent)
         }
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun playInlineTrailer(youtubeKey: String) {
+        binding.layoutTrailerPlayer.visibility = View.VISIBLE
+        binding.progressTrailer.visibility = View.VISIBLE
+
+        val webView = binding.webTrailer
+        webView.setBackgroundColor(Color.BLACK)
+        webView.settings.apply {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            mediaPlaybackRequiresUserGesture = false
+            loadWithOverviewMode = true
+            useWideViewPort = true
+            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+            userAgentString = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
+        }
+        webView.webChromeClient = WebChromeClient()
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView?, url: String?) {
+                binding.progressTrailer.visibility = View.GONE
+            }
+
+            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                // Tetap tahan navigasi di dalam player in-app
+                return false
+            }
+        }
+
+        val html = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+              <style>
+                html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
+                iframe { width: 100%; height: 100%; border: 0; }
+              </style>
+            </head>
+            <body>
+              <iframe
+                src="https://www.youtube-nocookie.com/embed/$youtubeKey?autoplay=1&playsinline=1&controls=1&rel=0&modestbranding=1"
+                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                allowfullscreen>
+              </iframe>
+            </body>
+            </html>
+        """.trimIndent()
+
+        webView.loadDataWithBaseURL(
+            "https://www.themoviedb.org",
+            html,
+            "text/html",
+            "UTF-8",
+            null
+        )
+    }
+
+    private fun closeInlineTrailer() {
+        binding.webTrailer.stopLoading()
+        binding.webTrailer.loadUrl("about:blank")
+        binding.layoutTrailerPlayer.visibility = View.GONE
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if (binding.layoutTrailerPlayer.visibility == View.VISIBLE) {
+            binding.webTrailer.onPause()
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        MovieRepository.removeOnCityChangedListener(onCityChangedListener)
+        binding.webTrailer.destroy()
     }
 
     companion object {

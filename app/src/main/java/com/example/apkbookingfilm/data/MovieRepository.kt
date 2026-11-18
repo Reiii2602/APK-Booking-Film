@@ -8,12 +8,20 @@ import com.example.apkbookingfilm.R
 import com.example.apkbookingfilm.data.TmdbApi.Category
 import com.example.apkbookingfilm.model.Booking
 import com.example.apkbookingfilm.model.Cinema
+import com.example.apkbookingfilm.model.FoodItem
+import com.example.apkbookingfilm.model.FoodOrderItem
 import com.example.apkbookingfilm.model.Movie
 import com.example.apkbookingfilm.model.User
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import java.text.NumberFormat
+import java.util.Locale
 import java.util.concurrent.Executors
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 class MovieRepository(context: Context) {
 
@@ -35,6 +43,7 @@ class MovieRepository(context: Context) {
         private const val KEY_LATEST_DATE = "latest_date"
         private const val KEY_LATEST_TIME = "latest_time"
         private const val KEY_LATEST_TOTAL = "latest_total"
+        private const val KEY_SELECTED_CITY = "selected_city"
 
         private const val CACHE_FILE = "tmdb_cache.json"
         private const val PAGES_PER_CATEGORY = 2
@@ -99,6 +108,200 @@ class MovieRepository(context: Context) {
             )
         )
 
+        /** Katalog bioskop seluruh kota besar di Indonesia dengan koordinat real. */
+        val allCinemas: List<Cinema> = listOf(
+            // YOGYAKARTA
+            Cinema("ambarrukmo-xxi", "Ambarrukmo XXI", "Plaza Ambarrukmo Lt. 3, Jl. Laksda Adisucipto, Yogyakarta", "1.2 km",
+                listOf("PREMIERE", "IMAX WITH LASER", "DOLBY ATMOS"), listOf("12:30", "15:15", "18:00", "20:45"),
+                50000, "Yogyakarta", "XXI", -7.7828, 110.4012),
+            Cinema("empire-xxi", "Empire XXI Jogja", "Jl. Urip Sumoharjo No. 104, Gondokusuman, Yogyakarta", "2.4 km",
+                listOf("PREMIERE", "DOLBY ATMOS", "2D REGULAR"), listOf("13:00", "15:45", "18:30", "21:15"),
+                45000, "Yogyakarta", "XXI", -7.7832, 110.3886),
+            Cinema("jogja-city-xxi", "Jogja City XXI", "Jogja City Mall Lt. 2, Jl. Magelang Km. 6, Yogyakarta", "3.5 km",
+                listOf("PREMIERE", "IMAX", "DOLBY ATMOS"), listOf("12:45", "15:30", "18:15", "21:00"),
+                50000, "Yogyakarta", "XXI", -7.7524, 110.3607),
+            Cinema("cgv-pakuwon-jogja", "CGV Pakuwon Mall Jogja", "Pakuwon Mall Lt. 2, Jl. Ring Road Utara, Sleman, Yogyakarta", "4.2 km",
+                listOf("4DX", "SPHERE X", "VELVET CLASS"), listOf("13:15", "16:00", "18:45", "21:30"),
+                50000, "Yogyakarta", "CGV", -7.7586, 110.3991),
+            Cinema("cinepolis-lippo-jogja", "Cinépolis Lippo Plaza Jogja", "Lippo Plaza Lt. 1, Jl. Laksda Adisucipto No. 32, Yogyakarta", "2.8 km",
+                listOf("VIP CINEMA", "MACRO XE", "REGULAR"), listOf("13:30", "16:15", "19:00", "21:45"),
+                45000, "Yogyakarta", "Cinépolis", -7.7834, 110.3910),
+
+            // SOLO (SURAKARTA)
+            Cinema("solo-paragon-xxi", "Solo Paragon XXI", "Solo Paragon Mall Lt. 2, Jl. Yosodipuro No. 133, Solo", "1.1 km",
+                listOf("PREMIERE", "DOLBY ATMOS", "2D REGULAR"), listOf("12:30", "15:15", "18:00", "20:45"),
+                50000, "Solo", "XXI", -7.5608, 110.8124),
+            Cinema("solo-square-xxi", "Solo Square XXI", "Solo Square Lt. 3, Jl. Slamet Riyadi No. 451, Solo", "2.6 km",
+                listOf("DOLBY ATMOS", "2D REGULAR"), listOf("13:00", "15:45", "18:30", "21:15"),
+                45000, "Solo", "XXI", -7.5601, 110.7885),
+            Cinema("the-park-solo-xxi", "The Park XXI Solo", "The Park Mall Lt. 2, Jl. Ir. Soekarno, Solo Baru", "4.5 km",
+                listOf("PREMIERE", "IMAX", "DOLBY ATMOS"), listOf("12:45", "15:30", "18:15", "21:00"),
+                50000, "Solo", "XXI", -7.6010, 110.8165),
+            Cinema("cgv-transmart-solo", "CGV Transmart Solo", "Transmart Pabelan Lt. 3, Jl. A. Yani No. 234, Solo", "5.3 km",
+                listOf("4DX", "GOLD CLASS", "REGULAR 2D"), listOf("13:15", "16:00", "18:45", "21:30"),
+                45000, "Solo", "CGV", -7.5540, 110.7689),
+            Cinema("cinepolis-solo", "Cinépolis Solo Grand Mall", "Solo Grand Mall Lt. 3, Jl. Slamet Riyadi No. 273, Solo", "1.8 km",
+                listOf("MACRO XE", "VIP", "REGULAR"), listOf("13:30", "16:15", "19:00", "21:45"),
+                45000, "Solo", "Cinépolis", -7.5656, 110.8087),
+
+            // JAKARTA
+            Cinema("grand-indo-cgv", "CGV Grand Indonesia", "Grand Indonesia West Mall Lt. 8, Jl. MH Thamrin No. 1, Jakarta", "1.4 km",
+                listOf("4DX", "SPHERE X", "GOLD CLASS"), listOf("12:00", "15:00", "18:15", "21:15"),
+                65000, "Jakarta", "CGV", -6.1950, 106.8208),
+            Cinema("plaza-senayan-xxi", "Plaza Senayan XXI", "Plaza Senayan Lt. 5, Jl. Asia Afrika No. 8, Jakarta", "3.1 km",
+                listOf("PREMIERE", "IMAX", "DOLBY ATMOS"), listOf("12:30", "15:30", "18:30", "21:30"),
+                60000, "Jakarta", "XXI", -6.2254, 106.7993),
+            Cinema("gandaria-city-xxi", "Gandaria City XXI", "Gandaria City Lt. 2, Jl. Sultan Iskandar Muda, Jakarta", "4.8 km",
+                listOf("PREMIERE", "IMAX WITH LASER", "DOLBY ATMOS"), listOf("13:00", "16:00", "19:00", "21:45"),
+                60000, "Jakarta", "XXI", -6.2442, 106.7834),
+            Cinema("kokas-xxi", "Kota Kasablanka XXI", "Kota Kasablanka Lt. 2, Jl. Casablanca Raya Kav. 88, Jakarta", "3.7 km",
+                listOf("PREMIERE", "DOLBY ATMOS", "REGULAR"), listOf("12:45", "15:45", "18:45", "21:30"),
+                55000, "Jakarta", "XXI", -6.2241, 106.8424),
+            Cinema("cinepolis-senayan-park", "Cinépolis Senayan Park", "Senayan Park Lt. 1, Jl. Gerbang Pemuda No. 3, Jakarta", "2.9 km",
+                listOf("VIP LUXE", "MACRO XE", "REGULAR"), listOf("13:15", "16:15", "19:15", "22:00"),
+                55000, "Jakarta", "Cinépolis", -6.2121, 106.8037),
+
+            // BANDUNG
+            Cinema("ciwalk-xxi", "Ciwalk XXI Bandung", "Cihampelas Walk Lt. 2, Jl. Cihampelas No. 160, Bandung", "1.5 km",
+                listOf("PREMIERE", "DOLBY ATMOS", "REGULAR"), listOf("12:30", "15:15", "18:00", "20:45"),
+                50000, "Bandung", "XXI", -6.8938, 107.6054),
+            Cinema("tsm-bandung-xxi", "TSM XXI Bandung", "Trans Studio Mall Lt. 2, Jl. Gatot Subroto No. 289, Bandung", "3.4 km",
+                listOf("PREMIERE", "IMAX", "DOLBY ATMOS"), listOf("13:00", "15:45", "18:30", "21:15"),
+                55000, "Bandung", "XXI", -6.9255, 107.6365),
+            Cinema("cgv-pvj", "CGV Paris Van Java", "Paris Van Java Lt. 1, Jl. Sukajadi No. 131-139, Bandung", "2.3 km",
+                listOf("4DX", "VELVET CLASS", "STARIUM"), listOf("12:45", "15:30", "18:15", "21:00"),
+                55000, "Bandung", "CGV", -6.8891, 107.5959),
+            Cinema("cgv-23-paskal", "CGV 23 Paskal Bandung", "23 Paskal Shopping Center Lt. 3, Jl. Pasir Kaliki, Bandung", "2.1 km",
+                listOf("4DX", "GOLD CLASS", "SPHERE X"), listOf("13:15", "16:00", "18:45", "21:30"),
+                55000, "Bandung", "CGV", -6.9158, 107.5936),
+            Cinema("cinepolis-istana-plaza", "Cinépolis Istana Plaza", "Istana Plaza Lt. 3, Jl. Pasirkaliki No. 121, Bandung", "1.9 km",
+                listOf("MACRO XE", "VIP", "REGULAR"), listOf("13:30", "16:15", "19:00", "21:45"),
+                45000, "Bandung", "Cinépolis", -6.9062, 107.5967),
+
+            // SURABAYA
+            Cinema("tunjungan-5-xxi", "Tunjungan 5 XXI", "Tunjungan Plaza 5 Lt. 5, Jl. Basuki Rahmat, Surabaya", "1.3 km",
+                listOf("PREMIERE", "IMAX WITH LASER", "DOLBY ATMOS"), listOf("12:30", "15:15", "18:00", "20:45"),
+                55000, "Surabaya", "XXI", -7.2624, 112.7388),
+            Cinema("pakuwon-sby-xxi", "Pakuwon Mall XXI Surabaya", "Pakuwon Mall Lt. 2, Jl. Puncak Indah Lontar No. 2, Surabaya", "5.8 km",
+                listOf("PREMIERE", "IMAX", "DOLBY ATMOS"), listOf("13:00", "15:45", "18:30", "21:15"),
+                55000, "Surabaya", "XXI", -7.2892, 112.6754),
+            Cinema("ciputra-world-xxi", "Ciputra World XXI", "Ciputra World Lt. 4, Jl. Mayjen Sungkono No. 89, Surabaya", "3.9 km",
+                listOf("PREMIERE", "DOLBY ATMOS", "REGULAR"), listOf("12:45", "15:30", "18:15", "21:00"),
+                50000, "Surabaya", "XXI", -7.2925, 112.7212),
+            Cinema("cgv-marvell-sby", "CGV Marvell City Surabaya", "Marvell City Lt. 3, Jl. Ngagel No. 123, Surabaya", "2.7 km",
+                listOf("4DX", "SPHERE X", "SWEETBOX"), listOf("13:15", "16:00", "18:45", "21:30"),
+                50000, "Surabaya", "CGV", -7.2903, 112.7453),
+            Cinema("cinepolis-cito", "Cinépolis City of Tomorrow", "CITO Mall Lt. 2, Jl. Ahmad Yani No. 288, Surabaya", "6.2 km",
+                listOf("MACRO XE", "REGULAR"), listOf("13:30", "16:15", "19:00", "21:45"),
+                45000, "Surabaya", "Cinépolis", -7.3422, 112.7289),
+
+            // SEMARANG
+            Cinema("paragon-smg-xxi", "Paragon City XXI Semarang", "Paragon City Mall Lt. 3, Jl. Pemuda No. 118, Semarang", "1.2 km",
+                listOf("PREMIERE", "DOLBY ATMOS", "REGULAR"), listOf("12:30", "15:15", "18:00", "20:45"),
+                50000, "Semarang", "XXI", -6.9791, 110.4159),
+            Cinema("dp-mall-xxi", "DP Mall XXI Semarang", "DP Mall Lt. 2, Jl. Pemuda No. 150, Semarang", "1.6 km",
+                listOf("PREMIERE", "IMAX", "DOLBY ATMOS"), listOf("13:00", "15:45", "18:30", "21:15"),
+                50000, "Semarang", "XXI", -6.9825, 110.4126),
+            Cinema("citra-smg-xxi", "Citra XXI Semarang", "Mall Ciputra Lt. 3, Jl. Simpang Lima No. 1, Semarang", "2.4 km",
+                listOf("DOLBY ATMOS", "REGULAR"), listOf("12:45", "15:30", "18:15", "21:00"),
+                45000, "Semarang", "XXI", -6.9895, 110.4227),
+            Cinema("cinepolis-java-smg", "Cinépolis Java Supermall", "Java Supermall Lt. 3, Jl. MT Haryono No. 992, Semarang", "3.8 km",
+                listOf("VIP", "MACRO XE", "REGULAR"), listOf("13:30", "16:15", "19:00", "21:45"),
+                45000, "Semarang", "Cinépolis", -7.0017, 110.4337),
+
+            // MALANG
+            Cinema("araya-mlg-xxi", "Araya XXI Malang", "Plaza Araya Lt. 2, Jl. Blimbing Indah Megah, Malang", "3.4 km",
+                listOf("PREMIERE", "DOLBY ATMOS", "REGULAR"), listOf("12:30", "15:15", "18:00", "20:45"),
+                45000, "Malang", "XXI", -7.9349, 112.6584),
+            Cinema("transmart-mx-xxi", "Transmart MX Mall XXI", "Transmart MX Mall Lt. 3, Jl. Veteran No. 8, Malang", "1.8 km",
+                listOf("DOLBY ATMOS", "REGULAR"), listOf("13:00", "15:45", "18:30", "21:15"),
+                45000, "Malang", "XXI", -7.9571, 112.6177),
+            Cinema("cgv-blimbing-mlg", "CGV Malang City Point", "Malang City Point Lt. 3, Jl. Terusan Dieng No. 32, Malang", "2.6 km",
+                listOf("GOLD CLASS", "STARIUM", "REGULAR"), listOf("13:15", "16:00", "18:45", "21:30"),
+                45000, "Malang", "CGV", -7.9718, 112.6104),
+            Cinema("cinepolis-matos", "Cinépolis MATOS Malang", "Malang Town Square Lt. 3, Jl. Veteran No. 2, Malang", "1.5 km",
+                listOf("VIP", "MACRO XE", "REGULAR"), listOf("13:30", "16:15", "19:00", "21:45"),
+                45000, "Malang", "Cinépolis", -7.9565, 112.6186),
+
+            // MEDAN
+            Cinema("centre-point-xxi", "Centre Point XXI Medan", "Mall Centre Point Lt. 3A, Jl. Jawa No. 8, Medan", "1.1 km",
+                listOf("PREMIERE", "IMAX", "DOLBY ATMOS"), listOf("12:30", "15:15", "18:00", "20:45"),
+                50000, "Medan", "XXI", 3.5919, 98.6806),
+            Cinema("delipark-xxi", "Delipark Podomoro XXI", "Delipark Mall Lt. 3, Jl. Guru Patimpus No. 1, Medan", "1.8 km",
+                listOf("PREMIERE", "IMAX WITH LASER", "DOLBY ATMOS"), listOf("13:00", "15:45", "18:30", "21:15"),
+                55000, "Medan", "XXI", 3.5966, 98.6746),
+            Cinema("cgv-focal-medan", "CGV Focal Point Medan", "Focal Point Lt. 3, Jl. Ring Road Gagak Hitam, Medan", "4.5 km",
+                listOf("4DX", "SPHERE X", "REGULAR"), listOf("13:15", "16:00", "18:45", "21:30"),
+                45000, "Medan", "CGV", 3.5734, 98.6251),
+            Cinema("cinepolis-sun-plaza", "Cinépolis Sun Plaza Medan", "Sun Plaza Lt. 4, Jl. KH Zainul Arifin No. 7, Medan", "2.1 km",
+                listOf("VIP", "MACRO XE", "REGULAR"), listOf("13:30", "16:15", "19:00", "21:45"),
+                50000, "Medan", "Cinépolis", 3.5835, 98.6716),
+
+            // MAKASSAR
+            Cinema("tsm-makassar-xxi", "TSM XXI Makassar", "Trans Studio Mall Lt. 2, Jl. HM Dg Patompo, Makassar", "2.9 km",
+                listOf("PREMIERE", "IMAX", "DOLBY ATMOS"), listOf("12:30", "15:15", "18:00", "20:45"),
+                50000, "Makassar", "XXI", -5.1636, 119.3948),
+            Cinema("panakkukang-xxi", "Panakkukang XXI", "Mall Panakkukang Lt. 3, Jl. Boulevard, Makassar", "2.1 km",
+                listOf("PREMIERE", "DOLBY ATMOS", "REGULAR"), listOf("13:00", "15:45", "18:30", "21:15"),
+                45000, "Makassar", "XXI", -5.1563, 119.4468),
+            Cinema("cgv-panakkukang", "CGV Panakkukang Square", "Panakkukang Square Lt. 3, Jl. Adiyaksa, Makassar", "2.4 km",
+                listOf("GOLD CLASS", "STARIUM", "REGULAR"), listOf("13:15", "16:00", "18:45", "21:30"),
+                45000, "Makassar", "CGV", -5.1586, 119.4424),
+
+            // DENPASAR / BALI
+            Cinema("beachwalk-xxi", "Beachwalk XXI Kuta", "Beachwalk Shopping Center Lt. 2, Jl. Pantai Kuta, Bali", "2.5 km",
+                listOf("PREMIERE", "DOLBY ATMOS", "REGULAR"), listOf("12:30", "15:15", "18:00", "20:45"),
+                55000, "Denpasar", "XXI", -8.7153, 115.1695),
+            Cinema("level21-xxi", "Level 21 XXI Denpasar", "Level 21 Mall Lt. 3, Jl. Teuku Umar No. 1, Denpasar", "1.3 km",
+                listOf("PREMIERE", "DOLBY ATMOS", "REGULAR"), listOf("13:00", "15:45", "18:30", "21:15"),
+                50000, "Denpasar", "XXI", -8.6762, 115.2094),
+            Cinema("cinepolis-lippo-bali", "Cinépolis Lippo Mall Kuta", "Lippo Mall Kuta Lt. UG, Jl. Kartika Plaza, Bali", "3.4 km",
+                listOf("VIP", "MACRO XE", "REGULAR"), listOf("13:30", "16:15", "19:00", "21:45"),
+                50000, "Denpasar", "Cinépolis", -8.7327, 115.1669),
+
+            // PALEMBANG
+            Cinema("pim-xxi", "PIM XXI Palembang", "Palembang Indah Mall Lt. 3, Jl. Letkol Iskandar, Palembang", "1.4 km",
+                listOf("PREMIERE", "DOLBY ATMOS", "REGULAR"), listOf("12:30", "15:15", "18:00", "20:45"),
+                50000, "Palembang", "XXI", -2.9787, 104.7453),
+            Cinema("cgv-soma-plg", "CGV Social Market Palembang", "Social Market Lt. 2, Jl. Veteran No. 999, Palembang", "2.0 km",
+                listOf("4DX", "SWEETBOX", "REGULAR"), listOf("13:15", "16:00", "18:45", "21:30"),
+                45000, "Palembang", "CGV", -2.9765, 104.7615),
+            Cinema("cinepolis-palembang-icon", "Cinépolis Palembang Icon", "Palembang Icon Lt. 3, Jl. POM IX, Palembang", "1.9 km",
+                listOf("VIP", "MACRO XE", "REGULAR"), listOf("13:30", "16:15", "19:00", "21:45"),
+                50000, "Palembang", "Cinépolis", -2.9776, 104.7393),
+
+            // BALIKPAPAN
+            Cinema("ewalk-xxi", "E-Walk XXI Balikpapan", "E-Walk BSB Lt. 1, Jl. Jend. Sudirman, Balikpapan", "1.5 km",
+                listOf("PREMIERE", "DOLBY ATMOS", "REGULAR"), listOf("12:30", "15:15", "18:00", "20:45"),
+                50000, "Balikpapan", "XXI", -1.2747, 116.8559),
+            Cinema("cgv-plaza-bpn", "CGV Plaza Balikpapan", "Plaza Balikpapan Lt. 2, Jl. Jend. Sudirman, Balikpapan", "2.3 km",
+                listOf("4DX", "GOLD CLASS", "REGULAR"), listOf("13:15", "16:00", "18:45", "21:30"),
+                50000, "Balikpapan", "CGV", -1.2757, 116.8427),
+            Cinema("cinepolis-living-bpn", "Cinépolis Living Plaza Balikpapan", "Living Plaza Lt. 2, Jl. MT Haryono, Balikpapan", "3.1 km",
+                listOf("VIP", "MACRO XE", "REGULAR"), listOf("13:30", "16:15", "19:00", "21:45"),
+                45000, "Balikpapan", "Cinépolis", -1.2571, 116.8673)
+        )
+
+        /** Menu Makanan & Minuman Cinema Food. */
+        val foodMenu: List<FoodItem> = listOf(
+            FoodItem("combo-a", "COMBO A", "1 Large Salted Popcorn + 1 Coca-Cola Regular", 45000, "Combo", "BEST SELLER"),
+            FoodItem("serbu-a", "SERBU A", "1 Large Caramel Popcorn + 1 XXI Java Tea", 50000, "Combo", "HEMAT"),
+            FoodItem("combo-couple", "COMBO COUPLE", "1 Jumbo Mix Popcorn + 2 Soft Drinks", 75000, "Combo", "FAVORIT"),
+            FoodItem("nachos-cheese", "NACHOS CHEESE", "Tortilla Chips renyah + Saus Keju Hangat", 40000, "Snack", "CRISPY"),
+            FoodItem("beef-hotdog", "BEEF HOTDOG", "Sosis Sapi Panggang + Roti & Saus Mustard", 38000, "Snack", ""),
+            FoodItem("french-fries", "FRENCH FRIES", "Kentang Goreng Renyah + Saus Sambal", 30000, "Snack", ""),
+            FoodItem("iced-java-tea", "XXI JAVA TEA", "Iced Lemon / Lychee Tea Spesial 22oz", 25000, "Minuman", "SEGAR"),
+            FoodItem("coca-cola", "COCA-COLA LARGE", "Minuman Bersoda Dingin 22oz", 22000, "Minuman", "")
+        )
+
+        // Keranjang makanan global antar halaman (Home -> SeatSelection -> Payment)
+        private val foodCart: MutableMap<String, Int> = linkedMapOf()
+        private val foodCartListeners = mutableListOf<() -> Unit>()
+
+        // Koordinat user hasil GPS scan (opsional)
+        @Volatile private var userLat: Double? = null
+        @Volatile private var userLng: Double? = null
+
         // ---- State global (hanya diubah di main thread) ----
         val allMovies: MutableList<Movie> = ArrayList(offlineMovies)
         private val categoryIds: MutableMap<Category, List<String>> = mutableMapOf()
@@ -107,14 +310,45 @@ class MovieRepository(context: Context) {
         @Volatile var isLoading = false
             private set
         private val listeners = mutableListOf<() -> Unit>()
+        private val cityListeners = mutableListOf<() -> Unit>()
         private val executor = Executors.newFixedThreadPool(3)
         private val mainHandler = Handler(Looper.getMainLooper())
 
         fun addOnMoviesUpdatedListener(listener: () -> Unit) { listeners.add(listener) }
         fun removeOnMoviesUpdatedListener(listener: () -> Unit) { listeners.remove(listener) }
 
+        fun addOnCityChangedListener(listener: () -> Unit) { cityListeners.add(listener) }
+        fun removeOnCityChangedListener(listener: () -> Unit) { cityListeners.remove(listener) }
+
+        fun addOnFoodCartChangedListener(listener: () -> Unit) { foodCartListeners.add(listener) }
+        fun removeOnFoodCartChangedListener(listener: () -> Unit) { foodCartListeners.remove(listener) }
+
         private fun notifyListeners() {
             listeners.toList().forEach { it.invoke() }
+        }
+
+        private fun notifyCityListeners() {
+            cityListeners.toList().forEach { it.invoke() }
+        }
+
+        private fun notifyFoodCartListeners() {
+            foodCartListeners.toList().forEach { it.invoke() }
+        }
+
+        fun formatRupiah(amount: Int): String {
+            val nf = NumberFormat.getIntegerInstance(Locale("in", "ID"))
+            return "Rp${nf.format(amount)}"
+        }
+
+        fun haversineKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+            val r = 6371.0
+            val dLat = Math.toRadians(lat2 - lat1)
+            val dLon = Math.toRadians(lon2 - lon1)
+            val a = sin(dLat / 2) * sin(dLat / 2) +
+                cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) *
+                sin(dLon / 2) * sin(dLon / 2)
+            val c = 2 * atan2(sqrt(a), sqrt(1 - a))
+            return r * c
         }
 
         /** Tambah / perbarui film (mis. hasil search atau halaman berikutnya). Main thread. */
@@ -122,7 +356,6 @@ class MovieRepository(context: Context) {
             for (m in list) {
                 val idx = allMovies.indexOfFirst { it.id == m.id }
                 if (idx >= 0) {
-                    // jangan timpa data detail lengkap dengan data list yang lebih sedikit
                     if (!allMovies[idx].hasFullDetail || m.hasFullDetail) allMovies[idx] = m
                 } else {
                     allMovies.add(m)
@@ -135,57 +368,83 @@ class MovieRepository(context: Context) {
 
     val movies: List<Movie> get() = allMovies
 
-    val cinemas: List<Cinema> = listOf(
-        Cinema(
-            id = "ambarrukmo-xxi",
-            name = "Ambarrukmo XXI",
-            location = "Plaza Ambarrukmo Lt. 3, Jl. Laksda Adisucipto, Yogyakarta",
-            distance = "1.2 km",
-            formats = listOf("PREMIERE", "IMAX WITH LASER", "DOLBY ATMOS"),
-            showtimes = listOf("12:30", "15:15", "18:00", "20:45"),
-            ticketPrice = 50000
-        ),
-        Cinema(
-            id = "empire-xxi",
-            name = "Empire XXI Jogja",
-            location = "Jl. Urip Sumoharjo No. 104, Gondokusuman, Yogyakarta",
-            distance = "2.4 km",
-            formats = listOf("PREMIERE", "DOLBY ATMOS", "2D REGULAR"),
-            showtimes = listOf("13:00", "15:45", "18:30", "21:15"),
-            ticketPrice = 50000
-        ),
-        Cinema(
-            id = "jogja-city-xxi",
-            name = "Jogja City XXI",
-            location = "Jogja City Mall Lt. 2, Jl. Magelang Km. 6, Yogyakarta",
-            distance = "3.5 km",
-            formats = listOf("PREMIERE", "IMAX", "DOLBY ATMOS"),
-            showtimes = listOf("12:45", "15:30", "18:15", "21:00"),
-            ticketPrice = 50000
-        ),
-        Cinema(
-            id = "cgv-pakuwon",
-            name = "CGV Pakuwon Mall Jogja",
-            location = "Pakuwon Mall Lt. 2, Jl. Ring Road Utara, Sleman, Yogyakarta",
-            distance = "4.2 km",
-            formats = listOf("4DX", "SPHERE X", "VELVET CLASS"),
-            showtimes = listOf("13:15", "16:00", "18:45", "21:30"),
-            ticketPrice = 50000
-        ),
-        Cinema(
-            id = "cinepolis-lippo",
-            name = "Cinepolis Lippo Plaza Jogja",
-            location = "Lippo Plaza Lt. 1, Jl. Laksda Adisucipto No. 32, Yogyakarta",
-            distance = "2.8 km",
-            formats = listOf("VIP CINEMA", "MACRO XE", "REGULAR"),
-            showtimes = listOf("13:30", "16:15", "19:00", "21:45"),
-            ticketPrice = 50000
-        )
-    )
+    val cinemas: List<Cinema> get() = getCinemasForCity(getSelectedCity())
 
     init {
         loadCacheIfNeeded()
         fetchMoviesFromTmdb()
+    }
+
+    // ================================================================ Kota & Bioskop Indonesia
+
+    fun getAvailableCities(): List<String> = allCinemas.map { it.city }.distinct()
+
+    fun getSelectedCity(): String = prefs.getString(KEY_SELECTED_CITY, "Yogyakarta") ?: "Yogyakarta"
+
+    fun setSelectedCity(city: String) {
+        val valid = getAvailableCities().firstOrNull { it.equals(city, ignoreCase = true) } ?: "Yogyakarta"
+        prefs.edit().putString(KEY_SELECTED_CITY, valid).apply()
+        notifyCityListeners()
+    }
+
+    fun getCinemasForCity(city: String = getSelectedCity()): List<Cinema> {
+        val list = allCinemas.filter { it.city.equals(city, ignoreCase = true) }
+            .ifEmpty { allCinemas.filter { it.city == "Yogyakarta" } }
+        val lat = userLat
+        val lng = userLng
+        return if (lat != null && lng != null) {
+            list.map { c ->
+                val km = haversineKm(lat, lng, c.lat, c.lng)
+                c.copy(distance = String.format(Locale.US, "%.1f km", km))
+            }.sortedBy {
+                it.distance.removeSuffix(" km").toDoubleOrNull() ?: 999.0
+            }
+        } else {
+            list
+        }
+    }
+
+    /** Deteksi kota terdekat dari koordinat GPS user. */
+    fun updateUserLocation(lat: Double, lng: Double): String {
+        userLat = lat
+        userLng = lng
+        val nearest = allCinemas.minByOrNull { haversineKm(lat, lng, it.lat, it.lng) }
+        val detectedCity = nearest?.city ?: "Yogyakarta"
+        setSelectedCity(detectedCity)
+        return detectedCity
+    }
+
+    fun getCinemaById(id: String): Cinema? {
+        return allCinemas.find { it.id == id }
+    }
+
+    // ================================================================ Food & Drinks Cart
+
+    fun getFoodQuantity(foodId: String): Int = foodCart[foodId] ?: 0
+
+    fun setFoodQuantity(foodId: String, qty: Int) {
+        if (qty <= 0) foodCart.remove(foodId) else foodCart[foodId] = qty
+        notifyFoodCartListeners()
+    }
+
+    fun addFoodItem(foodId: String) {
+        setFoodQuantity(foodId, getFoodQuantity(foodId) + 1)
+    }
+
+    fun getFoodCartOrders(): List<FoodOrderItem> {
+        return foodMenu.mapNotNull { item ->
+            val q = foodCart[item.id] ?: 0
+            if (q > 0) FoodOrderItem(item, q) else null
+        }
+    }
+
+    fun getFoodCartCount(): Int = foodCart.values.sum()
+
+    fun getFoodCartTotal(): Int = getFoodCartOrders().sumOf { it.subtotal }
+
+    fun clearFoodCart() {
+        foodCart.clear()
+        notifyFoodCartListeners()
     }
 
     // ================================================================ TMDB
@@ -231,13 +490,11 @@ class MovieRepository(context: Context) {
         val merged = LinkedHashMap<String, Movie>()
         fetched.forEach { m ->
             val old = previous[m.id]
-            // pertahankan detail lengkap yang sudah pernah diambil
             merged[m.id] = if (old != null && old.hasFullDetail) old.copy(
                 rating = m.rating, voteCount = m.voteCount,
                 isNowShowing = m.isNowShowing, isComingSoon = m.isComingSoon
             ) else m
         }
-        // film yang disimpan user / tiket terakhir tetap disimpan walau tidak ada di daftar baru
         previous.values.filter { keepIds.contains(it.id) && !merged.containsKey(it.id) }
             .forEach { merged[it.id] = it }
 
@@ -313,7 +570,6 @@ class MovieRepository(context: Context) {
             categoryIds.clear()
             categoryIds.putAll(ids)
         } catch (_: Exception) {
-            // cache rusak -> abaikan
         }
     }
 
@@ -335,10 +591,6 @@ class MovieRepository(context: Context) {
 
     fun getMovieById(id: String): Movie? {
         return allMovies.find { it.id == id }
-    }
-
-    fun getCinemaById(id: String): Cinema? {
-        return cinemas.find { it.id == id }
     }
 
     // ================================================================ Authentication
@@ -451,7 +703,7 @@ class MovieRepository(context: Context) {
         val movieId = prefs.getString(KEY_LATEST_MOVIE_ID, "dune-2") ?: "dune-2"
         val movie = getMovieById(movieId) ?: allMovies[0]
         val cinemaName = prefs.getString(KEY_LATEST_CINEMA_NAME, "Ambarrukmo XXI") ?: "Ambarrukmo XXI"
-        val cinema = cinemas.find { it.name == cinemaName } ?: cinemas[0]
+        val cinema = allCinemas.find { it.name == cinemaName } ?: cinemas[0]
         val seatsStr = prefs.getString(KEY_LATEST_SEATS, "E6, E7") ?: "E6, E7"
         val seats = seatsStr.split(", ")
         val date = prefs.getString(KEY_LATEST_DATE, "Fri, 08 Nov • 19:30") ?: "Fri, 08 Nov • 19:30"

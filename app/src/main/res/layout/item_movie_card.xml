@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="140dp"
+    android:layout_width="144dp"
     android:layout_height="wrap_content"
     android:layout_marginEnd="12dp"
+    app:cardBackgroundColor="@color/bg_surface"
     app:cardCornerRadius="16dp"
     app:cardElevation="0dp"
     app:strokeColor="@color/divider_line"
-    app:strokeWidth="1dp"
-    app:cardBackgroundColor="@color/bg_surface">
+    app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -24,9 +24,9 @@
                 android:id="@+id/ivPoster"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:contentDescription="Movie Poster"
                 android:scaleType="centerCrop"
-                android:src="@drawable/img_poster_dune"
-                android:contentDescription="Movie Poster" />
+                android:src="@drawable/img_poster_dune" />
 
             <!-- Rating badge -->
             <LinearLayout
@@ -74,7 +74,7 @@
                 android:maxLines="1"
                 android:text="Dune: Part Two"
                 android:textColor="@color/text_primary"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -88,11 +88,54 @@
                 android:textColor="@color/text_secondary"
                 android:textSize="11sp" />
 
+            <!-- Mini chain badges (XXI / CGV / Cinépolis) -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_chip_unselected"
+                    android:paddingHorizontal="4dp"
+                    android:paddingVertical="1dp"
+                    android:text="XXI"
+                    android:textColor="@color/maroon_primary"
+                    android:textSize="8sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:background="@drawable/bg_chip_unselected"
+                    android:paddingHorizontal="4dp"
+                    android:paddingVertical="1dp"
+                    android:text="CGV"
+                    android:textColor="@color/maroon_primary"
+                    android:textSize="8sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:background="@drawable/bg_chip_unselected"
+                    android:paddingHorizontal="4dp"
+                    android:paddingVertical="1dp"
+                    android:text="CINÉPOLIS"
+                    android:textColor="@color/maroon_primary"
+                    android:textSize="8sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
             <TextView
                 android:id="@+id/tvDuration"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
+                android:layout_marginTop="4dp"
                 android:text="2h 46m"
                 android:textColor="@color/text_muted"
                 android:textSize="10sp" />

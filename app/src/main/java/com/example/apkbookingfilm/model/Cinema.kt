@@ -9,5 +9,9 @@ data class Cinema(
     val distance: String,
     val formats: List<String>,
     val showtimes: List<String>,
-    val ticketPrice: Int = 50000
+    val ticketPrice: Int = 50000,
+    val city: String = "Yogyakarta",
+    val chain: String = "XXI",
+    val lat: Double = -7.7828,
+    val lng: Double = 110.4012
 ) : Serializable
