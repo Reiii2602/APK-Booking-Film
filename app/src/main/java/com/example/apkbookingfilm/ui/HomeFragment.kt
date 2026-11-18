@@ -7,10 +7,12 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.apkbookingfilm.MainActivity
 import com.example.apkbookingfilm.adapter.MovieAdapter
 import com.example.apkbookingfilm.adapter.MovieViewType
 import com.example.apkbookingfilm.data.MovieRepository
+import com.example.apkbookingfilm.data.TmdbApi.Category
 import com.example.apkbookingfilm.databinding.FragmentHomeBinding
 import com.example.apkbookingfilm.model.Movie
 import com.example.apkbookingfilm.util.TmdbImageLoader
@@ -23,8 +25,7 @@ class HomeFragment : Fragment() {
 
     private val onMoviesUpdatedListener = {
         if (_binding != null) {
-            setupNowShowing()
-            setupComingSoon()
+            refreshAll()
         }
     }
 
@@ -43,15 +44,21 @@ class HomeFragment : Fragment() {
         MovieRepository.addOnMoviesUpdatedListener(onMoviesUpdatedListener)
 
         setupGreeting()
-        setupHighlight()
-        setupNowShowing()
-        setupComingSoon()
+        refreshAll()
         setupListeners()
     }
 
     override fun onResume() {
         super.onResume()
         setupGreeting()
+    }
+
+    private fun refreshAll() {
+        setupHighlight()
+        setupRow(binding.rvNowShowing, Category.NOW_PLAYING)
+        setupRow(binding.rvPopular, Category.POPULAR)
+        setupRow(binding.rvTopRated, Category.TOP_RATED)
+        setupRow(binding.rvComingSoon, Category.UPCOMING)
     }
 
     private fun setupGreeting() {
@@ -65,40 +72,28 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupHighlight() {
-        val highlightMovie = repository.movies.firstOrNull { it.isHighlight } ?: repository.movies[0]
+        val highlightMovie = repository.getHighlightMovie()
         TmdbImageLoader.loadBackdrop(binding.ivHighlightPoster, highlightMovie)
 
         binding.tvHighlightTitle.text = highlightMovie.title
-        binding.tvHighlightSubtitle.text = "${highlightMovie.genre} • ${highlightMovie.duration} • ${highlightMovie.ageRating}"
+        binding.tvHighlightSubtitle.text = listOf(highlightMovie.genre, highlightMovie.duration, "★ ${highlightMovie.rating}")
+            .filter { it.isNotEmpty() }.joinToString(" • ")
 
-        val openDetail = {
-            val intent = Intent(requireContext(), MovieDetailActivity::class.java).apply {
-                putExtra(MovieDetailActivity.EXTRA_MOVIE_ID, highlightMovie.id)
-            }
-            startActivity(intent)
+        binding.cardHighlight.setOnClickListener { openMovieDetail(highlightMovie) }
+        binding.btnHighlightChooseSeats.setOnClickListener { openMovieDetail(highlightMovie) }
+    }
+
+    private fun setupRow(recyclerView: RecyclerView, category: Category) {
+        val movies = repository.getCategory(category).take(20)
+        val existing = recyclerView.adapter as? MovieAdapter
+        if (existing != null) {
+            existing.updateList(movies)
+            return
         }
-
-        binding.cardHighlight.setOnClickListener { openDetail() }
-        binding.btnHighlightChooseSeats.setOnClickListener { openDetail() }
-    }
-
-    private fun setupNowShowing() {
-        val nowShowingMovies = repository.movies.filter { it.isNowShowing }
-        binding.rvNowShowing.layoutManager =
+        recyclerView.layoutManager =
             LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
-        binding.rvNowShowing.adapter = MovieAdapter(
-            movies = nowShowingMovies,
-            viewType = MovieViewType.CARD_HORIZONTAL,
-            onMovieClick = { movie -> openMovieDetail(movie) }
-        )
-    }
-
-    private fun setupComingSoon() {
-        val comingSoonMovies = repository.movies.filter { it.isComingSoon }
-        binding.rvComingSoon.layoutManager =
-            LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
-        binding.rvComingSoon.adapter = MovieAdapter(
-            movies = comingSoonMovies,
+        recyclerView.adapter = MovieAdapter(
+            movies = movies,
             viewType = MovieViewType.CARD_HORIZONTAL,
             onMovieClick = { movie -> openMovieDetail(movie) }
         )
@@ -116,11 +111,19 @@ class HomeFragment : Fragment() {
             (activity as? MainActivity)?.selectTab(2)
         }
         binding.tvSeeAllNowShowing.setOnClickListener {
-            val firstMovie = repository.movies[0]
-            openMovieDetail(firstMovie)
+            AllMoviesActivity.open(requireContext(), Category.NOW_PLAYING)
+        }
+        binding.tvSeeAllPopular.setOnClickListener {
+            AllMoviesActivity.open(requireContext(), Category.POPULAR)
+        }
+        binding.tvSeeAllTopRated.setOnClickListener {
+            AllMoviesActivity.open(requireContext(), Category.TOP_RATED)
+        }
+        binding.tvSeeAllComingSoon.setOnClickListener {
+            AllMoviesActivity.open(requireContext(), Category.UPCOMING)
         }
         binding.btnSearchHome.setOnClickListener {
-            (activity as? MainActivity)?.selectTab(2)
+            AllMoviesActivity.open(requireContext(), Category.TRENDING, focusSearch = true)
         }
     }
 

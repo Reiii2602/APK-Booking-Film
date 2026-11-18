@@ -5,16 +5,14 @@ import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
 import com.example.apkbookingfilm.R
+import com.example.apkbookingfilm.data.TmdbApi.Category
 import com.example.apkbookingfilm.model.Booking
 import com.example.apkbookingfilm.model.Cinema
 import com.example.apkbookingfilm.model.Movie
 import com.example.apkbookingfilm.model.User
+import org.json.JSONArray
 import org.json.JSONObject
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.net.HttpURLConnection
-import java.net.URL
-import java.util.Locale
+import java.io.File
 import java.util.concurrent.Executors
 
 class MovieRepository(context: Context) {
@@ -23,13 +21,12 @@ class MovieRepository(context: Context) {
         context.getSharedPreferences("app_cinema_prefs", Context.MODE_PRIVATE)
 
     companion object {
-        private const val TMDB_API_KEY = "2dca580c2a14b55200e784d157207b4d"
         private const val KEY_IS_LOGGED_IN = "is_logged_in"
         private const val KEY_USER_NAME = "user_name"
         private const val KEY_USER_EMAIL = "user_email"
         private const val KEY_USER_POINTS = "user_points"
         private const val KEY_AUTH_PROVIDER = "auth_provider"
-        private const val KEY_SAVED_IDS = "saved_movie_ids"
+        private const val KEY_SAVED_IDS = "saved_movie_ids_v2"
         private const val KEY_TICKET_COUNT = "ticket_count"
         private const val KEY_LATEST_BOOKING_ID = "latest_booking_id"
         private const val KEY_LATEST_MOVIE_ID = "latest_movie_id"
@@ -39,164 +36,102 @@ class MovieRepository(context: Context) {
         private const val KEY_LATEST_TIME = "latest_time"
         private const val KEY_LATEST_TOTAL = "latest_total"
 
-        private val genreMap = mapOf(
-            28 to "Action",
-            12 to "Adventure",
-            16 to "Animation",
-            35 to "Comedy",
-            80 to "Crime",
-            99 to "Documentary",
-            18 to "Drama",
-            10751 to "Family",
-            14 to "Fantasy",
-            36 to "History",
-            27 to "Horror",
-            10402 to "Music",
-            9648 to "Mystery",
-            10749 to "Romance",
-            878 to "Sci-Fi",
-            10770 to "TV Movie",
-            53 to "Thriller",
-            10752 to "War",
-            37 to "Western"
-        )
+        private const val CACHE_FILE = "tmdb_cache.json"
+        private const val PAGES_PER_CATEGORY = 2
 
-        private val initialMovies = mutableListOf(
+        /** Data cadangan kalau HP offline & belum pernah ambil data dari TMDB. */
+        private val offlineMovies = listOf(
             Movie(
-                id = "dune-2",
-                title = "Dune: Part Two",
-                genre = "Sci-Fi, Adventure",
-                duration = "2h 46m",
-                ageRating = "13+",
-                rating = "8.5",
+                id = "dune-2", title = "Dune: Part Two", genre = "Sci-Fi, Adventure",
+                duration = "2h 46m", ageRating = "13+", rating = "8.2",
                 synopsis = "Paul Atreides unites with Chani and the Fremen on a path of revenge, facing a choice between love and the fate of the universe.",
-                posterResId = R.drawable.img_poster_dune,
-                backdropResId = R.drawable.img_backdrop_dune,
-                posterPath = "/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg",
-                backdropPath = "/uhUO7vQQKvCTfQWubOt5MAKokbL.jpg",
-                director = "Denis Villeneuve",
-                trailerDuration = "2:24",
-                isHighlight = true,
-                isNowShowing = true,
-                basePrice = 50000
+                posterResId = R.drawable.img_poster_dune, backdropResId = R.drawable.img_backdrop_dune,
+                posterPath = "/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg", backdropPath = "/uhUO7vQQKvCTfQWubOt5MAKokbL.jpg",
+                director = "Denis Villeneuve", isHighlight = true, tmdbId = 693134, releaseDate = "2024-02-27"
             ),
             Movie(
-                id = "killers-flower-moon",
-                title = "Killers of the Flower Moon",
-                genre = "Crime, Drama, History",
-                duration = "3h 26m",
-                ageRating = "17+",
-                rating = "8.5",
+                id = "killers-flower-moon", title = "Killers of the Flower Moon", genre = "Crime, Drama, History",
+                duration = "3h 26m", ageRating = "17+", rating = "7.5",
                 synopsis = "When oil is discovered in 1920s Oklahoma under Osage Nation land, the Osage people are murdered one by one until the FBI steps in to unravel the conspiracy.",
-                posterResId = R.drawable.img_poster_killers,
-                backdropResId = R.drawable.img_backdrop_killers,
-                posterPath = "/dB6Krk806zeqd0YNp2ngQ9zXteH.jpg",
-                backdropPath = "/acvE3RWjDLgvbL2RtcyzkrsAyNV.jpg",
-                director = "Martin Scorsese",
-                trailerDuration = "2:24",
-                isNowShowing = true,
-                basePrice = 50000
+                posterResId = R.drawable.img_poster_killers, backdropResId = R.drawable.img_backdrop_killers,
+                posterPath = "/dB6Krk806zeqd0YNp2ngQ9zXteH.jpg", backdropPath = "/acvE3RWjDLgvbL2RtcyzkrsAyNV.jpg",
+                director = "Martin Scorsese", tmdbId = 466420, releaseDate = "2023-10-18"
             ),
             Movie(
-                id = "oppenheimer",
-                title = "Openheimer",
-                genre = "Biography, Drama, History",
-                duration = "3h 00m",
-                ageRating = "17+",
-                rating = "8.5",
+                id = "oppenheimer", title = "Oppenheimer", genre = "Drama, History",
+                duration = "3h 01m", ageRating = "17+", rating = "8.1",
                 synopsis = "The story of American scientist J. Robert Oppenheimer and his role in the development of the atomic bomb during World War II.",
-                posterResId = R.drawable.img_poster_oppenheimer,
-                backdropResId = R.drawable.img_backdrop_oppenheimer,
-                posterPath = "/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
-                backdropPath = "/fm6KqXpk3M2HVveHwCrBSSBaO0V.jpg",
-                director = "Christopher Nolan",
-                trailerDuration = "2:24",
-                isNowShowing = true,
-                basePrice = 50000
+                posterResId = R.drawable.img_poster_oppenheimer, backdropResId = R.drawable.img_backdrop_oppenheimer,
+                posterPath = "/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg", backdropPath = "/fm6KqXpk3M2HVveHwCrBSSBaO0V.jpg",
+                director = "Christopher Nolan", tmdbId = 872585, releaseDate = "2023-07-19"
             ),
             Movie(
-                id = "poor-things",
-                title = "Poor Things",
-                genre = "Comedy, Drama, Romance",
-                duration = "2h 21m",
-                ageRating = "21+",
-                rating = "8.5",
+                id = "poor-things", title = "Poor Things", genre = "Comedy, Drama, Romance",
+                duration = "2h 21m", ageRating = "21+", rating = "7.7",
                 synopsis = "The incredible tale about the fantastical evolution of Bella Baxter, a young woman brought back to life by the brilliant and unorthodox scientist Dr. Godwin Baxter.",
-                posterResId = R.drawable.img_poster_poor_things,
-                backdropResId = R.drawable.img_backdrop_poor_things,
-                posterPath = "/kCGlIMHnOm8JPXq3rXM6c5wMxcT.jpg",
-                backdropPath = "/zh6IdheEYinU4TPtorWsjx6qPQE.jpg",
-                director = "Yorgos Lanthimos",
-                trailerDuration = "2:24",
-                isNowShowing = true,
-                basePrice = 50000
+                posterResId = R.drawable.img_poster_poor_things, backdropResId = R.drawable.img_backdrop_poor_things,
+                posterPath = "/kCGlIMHnOm8JPXq3rXM6c5wMxcT.jpg", backdropPath = "/zh6IdheEYinU4TPtorWsjx6qPQE.jpg",
+                director = "Yorgos Lanthimos", tmdbId = 792307, releaseDate = "2023-12-07"
             ),
             Movie(
-                id = "maestro",
-                title = "Maestro",
-                genre = "Biography, Drama, Music",
-                duration = "2h 09m",
-                ageRating = "17+",
-                rating = "8.5",
+                id = "maestro", title = "Maestro", genre = "Drama, Music",
+                duration = "2h 09m", ageRating = "17+", rating = "6.6",
                 synopsis = "A towering and fearless love story chronicling the lifelong relationship between Leonard Bernstein and Felicia Montealegre Cohn Bernstein.",
-                posterResId = R.drawable.img_poster_maestro,
-                backdropResId = R.drawable.img_backdrop_maestro,
-                posterPath = "/kxj7rMco6RNYsVcNwuGAIlfWu64.jpg",
-                backdropPath = "/et0G74BxoBgNQEZBkUcVhsgeRFF.jpg",
-                director = "Bradley Cooper",
-                trailerDuration = "2:24",
-                isNowShowing = true,
-                basePrice = 50000
+                posterResId = R.drawable.img_poster_maestro, backdropResId = R.drawable.img_backdrop_maestro,
+                posterPath = "/kxj7rMco6RNYsVcNwuGAIlfWu64.jpg", backdropPath = "/et0G74BxoBgNQEZBkUcVhsgeRFF.jpg",
+                director = "Bradley Cooper", tmdbId = 523607, releaseDate = "2023-12-20"
             ),
             Movie(
-                id = "the-fall-guy",
-                title = "The Fall Guy",
-                genre = "Action, Comedy",
-                duration = "2h 06m",
-                ageRating = "13+",
-                rating = "7.1",
+                id = "the-fall-guy", title = "The Fall Guy", genre = "Action, Comedy",
+                duration = "2h 06m", ageRating = "13+", rating = "7.1",
                 synopsis = "A down-and-out stuntman must track down a missing movie star, solve a conspiracy and try to win back the love of his life.",
-                posterResId = R.drawable.img_poster_fall_guy,
-                backdropResId = R.drawable.img_poster_fall_guy,
-                posterPath = "/e7olqFmzcIX5c23kX4zSmLPJi8c.jpg",
-                backdropPath = "/e7olqFmzcIX5c23kX4zSmLPJi8c.jpg",
-                director = "David Leitch",
-                isComingSoon = true,
-                isNowShowing = false,
-                basePrice = 50000
+                posterResId = R.drawable.img_poster_fall_guy, backdropResId = R.drawable.img_poster_fall_guy,
+                posterPath = "/e7olqFmzcIX5c23kX4zSmLPJi8c.jpg", backdropPath = "/e7olqFmzcIX5c23kX4zSmLPJi8c.jpg",
+                director = "David Leitch", isComingSoon = true, isNowShowing = false, tmdbId = 746036, releaseDate = "2024-04-24"
             ),
             Movie(
-                id = "kingdom-planet-apes",
-                title = "Kingdom of the Planet of the Apes",
-                genre = "Sci-Fi, Action, Adventure",
-                duration = "2h 25m",
-                ageRating = "13+",
-                rating = "7.8",
+                id = "kingdom-planet-apes", title = "Kingdom of the Planet of the Apes", genre = "Sci-Fi, Action, Adventure",
+                duration = "2h 25m", ageRating = "13+", rating = "7.1",
                 synopsis = "Several generations in the future following Caesar's reign, apes are now the dominant species and live harmoniously while humans have been reduced to living in the shadows.",
-                posterResId = R.drawable.img_poster_kingdom_apes,
-                backdropResId = R.drawable.img_poster_kingdom_apes,
-                posterPath = "/gKkl37BQuKTanygYQG1pyYgLVgf.jpg",
-                backdropPath = "/z121auT5q9Smum2KP05vm0am92P.jpg",
-                director = "Wes Ball",
-                isComingSoon = true,
-                isNowShowing = false,
-                basePrice = 50000
+                posterResId = R.drawable.img_poster_kingdom_apes, backdropResId = R.drawable.img_poster_kingdom_apes,
+                posterPath = "/gKkl37BQuKTanygYQG1pyYgLVgf.jpg", backdropPath = "/z121auT5q9Smum2KP05vm0am92P.jpg",
+                director = "Wes Ball", isComingSoon = true, isNowShowing = false, tmdbId = 653346, releaseDate = "2024-05-08"
             )
         )
 
-        // Cached list across repository instances
-        val allMovies: MutableList<Movie> = ArrayList(initialMovies)
-        private var hasFetchedFromTmdb = false
+        // ---- State global (hanya diubah di main thread) ----
+        val allMovies: MutableList<Movie> = ArrayList(offlineMovies)
+        private val categoryIds: MutableMap<Category, List<String>> = mutableMapOf()
+        private var cacheLoaded = false
+        private var lastFetchMs = 0L
+        @Volatile var isLoading = false
+            private set
         private val listeners = mutableListOf<() -> Unit>()
+        private val executor = Executors.newFixedThreadPool(3)
+        private val mainHandler = Handler(Looper.getMainLooper())
 
-        fun addOnMoviesUpdatedListener(listener: () -> Unit) {
-            listeners.add(listener)
+        fun addOnMoviesUpdatedListener(listener: () -> Unit) { listeners.add(listener) }
+        fun removeOnMoviesUpdatedListener(listener: () -> Unit) { listeners.remove(listener) }
+
+        private fun notifyListeners() {
+            listeners.toList().forEach { it.invoke() }
         }
 
-        fun removeOnMoviesUpdatedListener(listener: () -> Unit) {
-            listeners.remove(listener)
+        /** Tambah / perbarui film (mis. hasil search atau halaman berikutnya). Main thread. */
+        fun upsertMovies(list: List<Movie>) {
+            for (m in list) {
+                val idx = allMovies.indexOfFirst { it.id == m.id }
+                if (idx >= 0) {
+                    // jangan timpa data detail lengkap dengan data list yang lebih sedikit
+                    if (!allMovies[idx].hasFullDetail || m.hasFullDetail) allMovies[idx] = m
+                } else {
+                    allMovies.add(m)
+                }
+            }
         }
     }
+
+    private val appContext = context.applicationContext
 
     val movies: List<Movie> get() = allMovies
 
@@ -249,118 +184,153 @@ class MovieRepository(context: Context) {
     )
 
     init {
+        loadCacheIfNeeded()
         fetchMoviesFromTmdb()
     }
 
-    fun fetchMoviesFromTmdb() {
-        if (hasFetchedFromTmdb) return
-        hasFetchedFromTmdb = true
+    // ================================================================ TMDB
 
-        val executor = Executors.newSingleThreadExecutor()
+    /** Ambil semua kategori (Trending, Now Playing, Popular, Top Rated, Upcoming) dari TMDB. */
+    fun fetchMoviesFromTmdb(force: Boolean = false) {
+        val now = System.currentTimeMillis()
+        if (isLoading) return
+        if (!force && lastFetchMs != 0L && now - lastFetchMs < 10 * 60 * 1000) return
+        isLoading = true
+
+        executor.execute {
+            val fetched = LinkedHashMap<String, Movie>()
+            val ids = mutableMapOf<Category, List<String>>()
+            for (cat in Category.values()) {
+                val catIds = mutableListOf<String>()
+                for (page in 1..PAGES_PER_CATEGORY) {
+                    val result = TmdbApi.fetchCategory(cat, page) ?: break
+                    result.movies.forEach { m ->
+                        if (!fetched.containsKey(m.id)) fetched[m.id] = m
+                        if (!catIds.contains(m.id)) catIds.add(m.id)
+                    }
+                    if (page >= result.totalPages) break
+                }
+                if (catIds.isNotEmpty()) ids[cat] = catIds
+            }
+
+            mainHandler.post {
+                isLoading = false
+                if (fetched.isNotEmpty()) {
+                    lastFetchMs = System.currentTimeMillis()
+                    applyFetched(fetched.values.toList(), ids)
+                    saveCache()
+                }
+                notifyListeners()
+            }
+        }
+    }
+
+    private fun applyFetched(fetched: List<Movie>, ids: Map<Category, List<String>>) {
+        val keepIds = getSavedIds() + setOfNotNull(prefs.getString(KEY_LATEST_MOVIE_ID, null))
+        val previous = allMovies.associateBy { it.id }
+        val merged = LinkedHashMap<String, Movie>()
+        fetched.forEach { m ->
+            val old = previous[m.id]
+            // pertahankan detail lengkap yang sudah pernah diambil
+            merged[m.id] = if (old != null && old.hasFullDetail) old.copy(
+                rating = m.rating, voteCount = m.voteCount,
+                isNowShowing = m.isNowShowing, isComingSoon = m.isComingSoon
+            ) else m
+        }
+        // film yang disimpan user / tiket terakhir tetap disimpan walau tidak ada di daftar baru
+        previous.values.filter { keepIds.contains(it.id) && !merged.containsKey(it.id) }
+            .forEach { merged[it.id] = it }
+
+        allMovies.clear()
+        allMovies.addAll(merged.values)
+        categoryIds.clear()
+        categoryIds.putAll(ids)
+    }
+
+    /** Ambil detail lengkap (durasi, cast, sutradara, trailer) lalu update cache. */
+    fun fetchMovieDetail(movieId: String, callback: (Movie?) -> Unit) {
+        val base = getMovieById(movieId)
+        val tmdbId = base?.tmdbId?.takeIf { it > 0 }
+            ?: movieId.removePrefix("tmdb-").toIntOrNull() ?: 0
+        if (tmdbId <= 0) { callback(base); return }
+
+        executor.execute {
+            val detail = TmdbApi.fetchDetail(tmdbId, base)
+            mainHandler.post {
+                if (detail != null) upsertMovies(listOf(detail))
+                callback(detail ?: base)
+            }
+        }
+    }
+
+    /** Daftar film untuk satu kategori (fallback ke data lokal bila offline). */
+    fun getCategory(category: Category): List<Movie> {
+        val ids = categoryIds[category]
+        if (!ids.isNullOrEmpty()) {
+            val byId = allMovies.associateBy { it.id }
+            val list = ids.mapNotNull { byId[it] }
+            if (list.isNotEmpty()) return list
+        }
+        return when (category) {
+            Category.UPCOMING -> allMovies.filter { it.isComingSoon }
+            Category.NOW_PLAYING -> allMovies.filter { it.isNowShowing }
+            Category.TOP_RATED -> allMovies.sortedByDescending { it.rating.toDoubleOrNull() ?: 0.0 }
+            else -> allMovies
+        }
+    }
+
+    fun getHighlightMovie(): Movie {
+        return getCategory(Category.TRENDING).firstOrNull { it.backdropPath.isNotEmpty() && it.isNowShowing }
+            ?: allMovies.firstOrNull { it.isHighlight }
+            ?: allMovies.first()
+    }
+
+    // ---------------------------------------------------------------- cache file
+
+    private fun loadCacheIfNeeded() {
+        if (cacheLoaded) return
+        cacheLoaded = true
+        try {
+            val file = File(appContext.filesDir, CACHE_FILE)
+            if (!file.exists()) return
+            val root = JSONObject(file.readText())
+            val arr = root.optJSONArray("movies") ?: return
+            val list = mutableListOf<Movie>()
+            for (i in 0 until arr.length()) {
+                TmdbApi.movieFromJson(arr.getJSONObject(i))?.let { list.add(it) }
+            }
+            if (list.isEmpty()) return
+            val cats = root.optJSONObject("categories")
+            val ids = mutableMapOf<Category, List<String>>()
+            if (cats != null) {
+                for (cat in Category.values()) {
+                    val a = cats.optJSONArray(cat.name) ?: continue
+                    ids[cat] = (0 until a.length()).map { a.getString(it) }
+                }
+            }
+            allMovies.clear()
+            allMovies.addAll(list)
+            categoryIds.clear()
+            categoryIds.putAll(ids)
+        } catch (_: Exception) {
+            // cache rusak -> abaikan
+        }
+    }
+
+    private fun saveCache() {
+        val snapshotMovies = allMovies.toList()
+        val snapshotCats = categoryIds.toMap()
         executor.execute {
             try {
-                val nowPlaying = fetchEndpoint("https://api.themoviedb.org/3/movie/now_playing?api_key=$TMDB_API_KEY&language=en-US&page=1", isNowShowing = true, isComingSoon = false)
-                val upcoming = fetchEndpoint("https://api.themoviedb.org/3/movie/upcoming?api_key=$TMDB_API_KEY&language=en-US&page=1", isNowShowing = false, isComingSoon = true)
-                val popular = fetchEndpoint("https://api.themoviedb.org/3/movie/popular?api_key=$TMDB_API_KEY&language=en-US&page=1", isNowShowing = true, isComingSoon = false)
-
-                val newMovies = (nowPlaying + upcoming + popular)
-
-                val existingIds = allMovies.map { it.id }.toSet()
-                val existingTitles = allMovies.map { it.title.lowercase(Locale.ROOT) }.toSet()
-
-                val toAdd = newMovies.filter {
-                    !existingIds.contains(it.id) && !existingTitles.contains(it.title.lowercase(Locale.ROOT))
-                }
-
-                if (toAdd.isNotEmpty()) {
-                    allMovies.addAll(toAdd)
-                    Handler(Looper.getMainLooper()).post {
-                        listeners.forEach { it.invoke() }
-                    }
-                }
+                val arr = JSONArray()
+                snapshotMovies.filter { it.tmdbId > 0 }.forEach { arr.put(TmdbApi.movieToJson(it)) }
+                val cats = JSONObject()
+                snapshotCats.forEach { (cat, ids) -> cats.put(cat.name, JSONArray(ids)) }
+                val root = JSONObject().put("movies", arr).put("categories", cats)
+                File(appContext.filesDir, CACHE_FILE).writeText(root.toString())
             } catch (_: Exception) {
-                // If offline, fallback to initialMovies cleanly
             }
         }
-    }
-
-    private fun fetchEndpoint(urlString: String, isNowShowing: Boolean, isComingSoon: Boolean): List<Movie> {
-        val resultList = mutableListOf<Movie>()
-        val url = URL(urlString)
-        val conn = url.openConnection() as HttpURLConnection
-        conn.connectTimeout = 6000
-        conn.readTimeout = 6000
-        conn.requestMethod = "GET"
-
-        if (conn.responseCode == 200) {
-            val reader = BufferedReader(InputStreamReader(conn.inputStream))
-            val sb = StringBuilder()
-            var line: String? = reader.readLine()
-            while (line != null) {
-                sb.append(line)
-                line = reader.readLine()
-            }
-            reader.close()
-
-            val root = JSONObject(sb.toString())
-            val results = root.optJSONArray("results")
-            if (results != null) {
-                for (i in 0 until results.length()) {
-                    val obj = results.getJSONObject(i)
-                    val movie = parseMovieJson(obj, isNowShowing, isComingSoon)
-                    if (movie != null) {
-                        resultList.add(movie)
-                    }
-                }
-            }
-        }
-        conn.disconnect()
-        return resultList
-    }
-
-    private fun parseMovieJson(obj: JSONObject, isNowShowing: Boolean, isComingSoon: Boolean): Movie? {
-        val title = obj.optString("title", "")
-        if (title.isEmpty()) return null
-
-        val id = "tmdb-" + obj.optInt("id", (1000..9999).random())
-        val posterPath = obj.optString("poster_path", "")
-        val backdropPath = obj.optString("backdrop_path", "")
-        val overview = obj.optString("overview", "A compelling cinematic experience.")
-        val voteAvg = obj.optDouble("vote_average", 7.8)
-        val ratingStr = String.format(Locale.US, "%.1f", voteAvg)
-
-        val genreIds = obj.optJSONArray("genre_ids")
-        val genres = mutableListOf<String>()
-        if (genreIds != null) {
-            for (i in 0 until minOf(genreIds.length(), 2)) {
-                val gName = genreMap[genreIds.optInt(i)]
-                if (gName != null) genres.add(gName)
-            }
-        }
-        val genreString = if (genres.isNotEmpty()) genres.joinToString(", ") else "Drama, Action"
-
-        val isAdult = obj.optBoolean("adult", false)
-        val ageRating = if (isAdult) "21+" else if (genres.contains("Animation") || genres.contains("Family")) "SU" else "13+"
-
-        return Movie(
-            id = id,
-            title = title,
-            genre = genreString,
-            duration = "2h 10m",
-            ageRating = ageRating,
-            rating = ratingStr,
-            synopsis = overview,
-            posterResId = R.drawable.img_poster_dune,
-            backdropResId = R.drawable.img_backdrop_dune,
-            posterPath = posterPath,
-            backdropPath = backdropPath,
-            director = "Hollywood & International",
-            trailerDuration = "2:20",
-            isHighlight = false,
-            isNowShowing = isNowShowing,
-            isComingSoon = isComingSoon,
-            basePrice = 50000
-        )
     }
 
     fun getMovieById(id: String): Movie? {
@@ -371,7 +341,7 @@ class MovieRepository(context: Context) {
         return cinemas.find { it.id == id }
     }
 
-    // Authentication
+    // ================================================================ Authentication
     fun isLoggedIn(): Boolean {
         return prefs.getBoolean(KEY_IS_LOGGED_IN, false)
     }
@@ -391,7 +361,7 @@ class MovieRepository(context: Context) {
                 email = email,
                 avatarInitials = if (initials.isNotEmpty()) initials else "DF",
                 moviesCount = prefs.getInt(KEY_TICKET_COUNT, 12),
-                savedCount = 6,
+                savedCount = getSavedIds().size,
                 reviewsCount = 8,
                 points = points,
                 membershipTier = "CINEMA PLUS • SINCE 2024",
@@ -432,15 +402,13 @@ class MovieRepository(context: Context) {
         }
     }
 
-    // Saved Films
-    fun isMovieSaved(movieId: String): Boolean {
-        val set = prefs.getStringSet(KEY_SAVED_IDS, null) ?: setOf("dune-2", "oppenheimer", "killers-flower-moon")
-        return set.contains(movieId)
-    }
+    // ================================================================ Saved Films
+    private fun getSavedIds(): Set<String> = prefs.getStringSet(KEY_SAVED_IDS, null) ?: emptySet()
+
+    fun isMovieSaved(movieId: String): Boolean = getSavedIds().contains(movieId)
 
     fun toggleSaved(movieId: String): Boolean {
-        val currentSet = prefs.getStringSet(KEY_SAVED_IDS, null)?.toMutableSet()
-            ?: mutableSetOf("dune-2", "oppenheimer", "killers-flower-moon")
+        val currentSet = getSavedIds().toMutableSet()
         val isNowSaved = if (currentSet.contains(movieId)) {
             currentSet.remove(movieId)
             false
@@ -449,15 +417,16 @@ class MovieRepository(context: Context) {
             true
         }
         prefs.edit().putStringSet(KEY_SAVED_IDS, currentSet).apply()
+        saveCache()
         return isNowSaved
     }
 
     fun getSavedMovies(): List<Movie> {
-        val set = prefs.getStringSet(KEY_SAVED_IDS, null) ?: setOf("dune-2", "oppenheimer", "killers-flower-moon")
+        val set = getSavedIds()
         return allMovies.filter { set.contains(it.id) }
     }
 
-    // Save latest booking
+    // ================================================================ Booking
     fun saveBooking(booking: Booking) {
         val ticketsCount = prefs.getInt(KEY_TICKET_COUNT, 12) + booking.seats.size
         val currentPoints = prefs.getInt(KEY_USER_POINTS, 1240) + (booking.totalPrice / 1000)
@@ -473,6 +442,8 @@ class MovieRepository(context: Context) {
             putInt(KEY_USER_POINTS, currentPoints)
             apply()
         }
+        upsertMovies(listOf(booking.movie))
+        saveCache()
     }
 
     fun getLatestBooking(): Booking? {

@@ -1,9 +1,12 @@
 package com.example.apkbookingfilm
 
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
-import android.widget.ImageView
-import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
@@ -16,6 +19,9 @@ import com.example.apkbookingfilm.ui.LoginBottomSheet
 import com.example.apkbookingfilm.ui.ProfileFragment
 import com.example.apkbookingfilm.ui.SavedFragment
 import com.example.apkbookingfilm.ui.TheatersFragment
+import com.example.apkbookingfilm.update.UpdateManager
+import com.example.apkbookingfilm.update.UpdateNotifier
+import com.example.apkbookingfilm.update.UpdateWorker
 
 class MainActivity : AppCompatActivity() {
 
@@ -23,6 +29,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var repository: MovieRepository
 
     private var currentTabIndex = 0
+
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { _ -> }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,6 +50,35 @@ class MainActivity : AppCompatActivity() {
 
         setupBottomNav()
         selectTab(0)
+
+        requestNotificationPermissionIfNeeded()
+        UpdateNotifier.ensureChannel(this)
+        UpdateWorker.schedule(this)
+
+        val fromNotification = intent?.getBooleanExtra(EXTRA_SHOW_UPDATE, false) == true
+        UpdateManager.checkForUpdate(this, forceDialog = fromNotification)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (intent.getBooleanExtra(EXTRA_SHOW_UPDATE, false)) {
+            UpdateManager.checkForUpdate(this, forceDialog = true)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        UpdateManager.onResume(this)
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 
     private fun setupBottomNav() {
@@ -99,5 +138,9 @@ class MainActivity : AppCompatActivity() {
                 tabTexts[i].typeface = android.graphics.Typeface.DEFAULT
             }
         }
+    }
+
+    companion object {
+        const val EXTRA_SHOW_UPDATE = "extra_show_update"
     }
 }
