@@ -3,7 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_cream">
+    android:background="@color/bg_cream"
+    android:fitsSystemWindows="true">
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
@@ -17,10 +18,10 @@
             android:orientation="vertical"
             android:paddingBottom="24dp">
 
-            <!-- Top Header & Backdrop Frame (NO FRAME TEXT) -->
+            <!-- Top Header & Backdrop Frame (300dp so trailer has comfortable aspect ratio) -->
             <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="240dp">
+                android:layout_height="300dp">
 
                 <ImageView
                     android:id="@+id/ivDetailPoster"
@@ -132,7 +133,7 @@
                         android:indeterminateTint="@color/white"
                         android:visibility="gone" />
 
-                    <!-- Native In-App Controls: Play/Pause, Mute, Close -->
+                    <!-- Native In-App Controls: Standard Vector Play/Pause, Mute/Unmute, Close (No Emojis) -->
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -141,36 +142,30 @@
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
-                        <TextView
+                        <ImageView
                             android:id="@+id/btnPlayPauseTrailer"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
                             android:background="@drawable/bg_chip_selected"
                             android:backgroundTint="#CC000000"
                             android:clickable="true"
                             android:focusable="true"
-                            android:paddingHorizontal="12dp"
-                            android:paddingVertical="6dp"
-                            android:text="❚❚ PAUSE"
-                            android:textColor="@color/white"
-                            android:textSize="10sp"
-                            android:textStyle="bold" />
+                            android:padding="8dp"
+                            android:src="@drawable/ic_pause"
+                            app:tint="@color/white" />
 
-                        <TextView
+                        <ImageView
                             android:id="@+id/btnMuteTrailer"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
                             android:layout_marginStart="8dp"
                             android:background="@drawable/bg_chip_selected"
                             android:backgroundTint="#CC000000"
                             android:clickable="true"
                             android:focusable="true"
-                            android:paddingHorizontal="10dp"
-                            android:paddingVertical="6dp"
-                            android:text="🔊 SUARA"
-                            android:textColor="@color/white"
-                            android:textSize="10sp"
-                            android:textStyle="bold" />
+                            android:padding="8dp"
+                            android:src="@drawable/ic_volume_up"
+                            app:tint="@color/white" />
                     </LinearLayout>
 
                     <ImageView

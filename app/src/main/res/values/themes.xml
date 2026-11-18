@@ -1,16 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+    <!-- Base application theme (selalu pakai tema cream-marun konsisten walau HP mode malam). -->
     <style name="Base.Theme.ApkBookingFIlm" parent="Theme.Material3.Light.NoActionBar">
         <item name="colorPrimary">@color/maroon_primary</item>
         <item name="colorPrimaryDark">@color/maroon_dark</item>
         <item name="colorSecondary">@color/maroon_light</item>
+        <item name="colorSurface">@color/bg_surface</item>
+        <item name="colorOnSurface">@color/text_primary</item>
         <item name="android:windowBackground">@color/bg_cream</item>
         <item name="android:statusBarColor">@color/bg_cream</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:navigationBarColor">@color/bg_white</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
+        <item name="materialAlertDialogTheme">@style/ThemedAlertDialog</item>
     </style>
 
     <style name="Theme.ApkBookingFIlm" parent="Base.Theme.ApkBookingFIlm" />
+
+    <style name="ThemedAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="colorSurface">@color/bg_surface</item>
+        <item name="colorPrimary">@color/maroon_primary</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/text_secondary</item>
+        <item name="android:background">@color/bg_surface</item>
+    </style>
 
     <!-- Custom Button Styles -->
     <style name="PrimaryMaroonButton" parent="Widget.Material3.Button">

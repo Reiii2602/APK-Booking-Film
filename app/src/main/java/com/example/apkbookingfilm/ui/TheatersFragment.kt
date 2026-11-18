@@ -126,52 +126,206 @@ class TheatersFragment : Fragment() {
     }
 
     private fun renderMapMarkers(webView: WebView, city: String, cinemas: List<Cinema>) {
-        val center = cinemas.firstOrNull()
-        val centerLat = center?.lat ?: -7.7828
-        val centerLng = center?.lng ?: 110.4012
-
         val markersJs = cinemas.joinToString(",") { c ->
             val safeName = c.name.replace("'", "\\'")
             val safeLoc = c.location.replace("'", "\\'")
-            "{lat:${c.lat},lng:${c.lng},name:'$safeName',loc:'$safeLoc'}"
+            val safeDist = c.distance.replace("'", "\\'")
+            "{lat:${c.lat},lng:${c.lng},name:'$safeName',loc:'$safeLoc',dist:'$safeDist'}"
         }
+        val safeCity = city.replace("'", "\\'")
 
+        // 100% self-contained interactive city map (Canvas + pan/zoom + clickable cinema pins)
+        // Tidak bergantung tile server eksternal sehingga bebas dari blokir 418 / watermark API KEY.
         val html = """
             <!DOCTYPE html>
             <html>
             <head>
               <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-              <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-              <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
               <style>
-                html, body, #map { margin:0; padding:0; width:100%; height:100%; background:#F7EBE4; }
-                .leaflet-control-attribution { display: none !important; }
+                html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#F5EFEA; font-family:-apple-system,Roboto,sans-serif; user-select:none; }
+                canvas { width:100%; height:100%; display:block; touch-action:none; }
+                #cityBadge { position:absolute; top:10px; left:10px; background:rgba(255,255,255,0.94); color:#1D1917; font-size:11px; font-weight:700; padding:5px 10px; border-radius:14px; border:1px solid #E8D4C8; box-shadow:0 2px 6px rgba(0,0,0,0.08); }
+                #pinPopup { display:none; position:absolute; top:10px; right:10px; max-width:58%; background:#781D2E; color:#FFF; font-size:11px; padding:6px 10px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.18); }
+                #zoomBox { position:absolute; bottom:10px; left:10px; display:flex; gap:4px; }
+                .zbtn { width:26px; height:26px; border-radius:8px; background:rgba(255,255,255,0.95); border:1px solid #E8D4C8; color:#1D1917; font-weight:700; font-size:14px; line-height:24px; text-align:center; }
               </style>
             </head>
             <body>
-              <div id="map"></div>
+              <canvas id="c"></canvas>
+              <div id="cityBadge">$safeCity • ${cinemas.size} Bioskop</div>
+              <div id="pinPopup"></div>
+              <div id="zoomBox">
+                <div class="zbtn" onclick="changeZoom(1.25)">+</div>
+                <div class="zbtn" onclick="changeZoom(0.8)">-</div>
+              </div>
               <script>
-                var map = L.map('map', { zoomControl: false, attributionControl: false }).setView([$centerLat, $centerLng], 12);
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', {
-                  subdomains: 'abcd',
-                  maxZoom: 19
-                }).addTo(map);
+                var canvas = document.getElementById('c');
+                var ctx = canvas.getContext('2d');
                 var pts = [$markersJs];
-                var bounds = [];
+                var dpr = window.devicePixelRatio || 1;
+                var W = 0, H = 0;
+                var panX = 0, panY = 0, zoom = 1.0, selectedIdx = 0;
+
+                var minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
                 pts.forEach(function(p) {
-                  var m = L.circleMarker([p.lat, p.lng], {
-                    radius: 8, color: '#581220', fillColor: '#781D2E', fillOpacity: 0.95, weight: 2
-                  }).addTo(map);
-                  m.bindPopup('<b>' + p.name + '</b><br/><small>' + p.loc + '</small>');
-                  bounds.push([p.lat, p.lng]);
+                  if (p.lat < minLat) minLat = p.lat;
+                  if (p.lat > maxLat) maxLat = p.lat;
+                  if (p.lng < minLng) minLng = p.lng;
+                  if (p.lng > maxLng) maxLng = p.lng;
                 });
-                if (bounds.length > 1) { map.fitBounds(bounds, { padding: [26, 26] }); }
+                var spanLat = Math.max(maxLat - minLat, 0.03);
+                var spanLng = Math.max(maxLng - minLng, 0.03);
+                var cLat = (minLat + maxLat) / 2;
+                var cLng = (minLng + maxLng) / 2;
+
+                function resize() {
+                  W = canvas.clientWidth; H = canvas.clientHeight;
+                  canvas.width = W * dpr; canvas.height = H * dpr;
+                  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                  draw();
+                }
+
+                function toXY(lat, lng) {
+                  var scale = Math.min(W * 0.62 / spanLng, H * 0.56 / spanLat) * zoom;
+                  return {
+                    x: W / 2 + (lng - cLng) * scale + panX,
+                    y: H / 2 - (lat - cLat) * scale + panY
+                  };
+                }
+
+                function draw() {
+                  ctx.fillStyle = '#F5EFEA';
+                  ctx.fillRect(0, 0, W, H);
+
+                  var ox = panX % 60, oy = panY % 60;
+                  // Green park blocks
+                  ctx.fillStyle = '#E1EDE1';
+                  for (var gx = -1; gx < 6; gx++) {
+                    for (var gy = -1; gy < 4; gy++) {
+                      if ((gx + gy) % 3 === 0) {
+                        ctx.fillRect(gx * 90 + ox + 12, gy * 70 + oy + 10, 44, 28);
+                      }
+                    }
+                  }
+
+                  // River curve
+                  ctx.strokeStyle = '#CFE3EE';
+                  ctx.lineWidth = 10;
+                  ctx.beginPath();
+                  ctx.moveTo(-40, H * 0.72 + panY * 0.3);
+                  ctx.bezierCurveTo(W * 0.35, H * 0.52 + panY * 0.3, W * 0.65, H * 0.85 + panY * 0.3, W + 40, H * 0.45 + panY * 0.3);
+                  ctx.stroke();
+
+                  // Secondary city street grid
+                  ctx.strokeStyle = '#EAE0D8';
+                  ctx.lineWidth = 1.5;
+                  for (var x = -60 + (panX % 36); x < W + 60; x += 36) {
+                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+                  }
+                  for (var y = -60 + (panY % 36); y < H + 60; y += 36) {
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+                  }
+
+                  // Main arterial roads connecting cinemas
+                  ctx.strokeStyle = '#FFFFFF';
+                  ctx.lineWidth = 6;
+                  ctx.beginPath();
+                  pts.forEach(function(p, i) {
+                    var xy = toXY(p.lat, p.lng);
+                    if (i === 0) ctx.moveTo(xy.x, xy.y); else ctx.lineTo(xy.x, xy.y);
+                  });
+                  ctx.stroke();
+
+                  ctx.strokeStyle = '#F3CFA4';
+                  ctx.lineWidth = 3;
+                  ctx.beginPath();
+                  ctx.moveTo(0, H * 0.48 + panY * 0.5);
+                  ctx.lineTo(W, H * 0.42 + panY * 0.5);
+                  ctx.moveTo(W * 0.45 + panX * 0.5, 0);
+                  ctx.lineTo(W * 0.52 + panX * 0.5, H);
+                  ctx.stroke();
+
+                  // Cinema pins
+                  pts.forEach(function(p, idx) {
+                    var xy = toXY(p.lat, p.lng);
+                    var active = idx === selectedIdx;
+                    p._x = xy.x; p._y = xy.y;
+
+                    ctx.fillStyle = active ? 'rgba(120,29,46,0.22)' : 'rgba(120,29,46,0.12)';
+                    ctx.beginPath(); ctx.arc(xy.x, xy.y, active ? 17 : 12, 0, Math.PI * 2); ctx.fill();
+
+                    ctx.fillStyle = active ? '#781D2E' : '#9A273D';
+                    ctx.strokeStyle = '#FFFFFF';
+                    ctx.lineWidth = 2.2;
+                    ctx.beginPath(); ctx.arc(xy.x, xy.y, active ? 9 : 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+                    var label = p.name.replace(' Jogja','').replace(' Bandung','').replace(' Surabaya','').replace(' Semarang','').replace(' Malang','').replace(' Medan','').replace(' Makassar','').replace(' Palembang','').replace(' Balikpapan','');
+                    ctx.font = (active ? 'bold 10px' : '600 9px') + ' sans-serif';
+                    var tw = ctx.measureText(label).width;
+                    ctx.fillStyle = active ? '#781D2E' : 'rgba(255,255,255,0.92)';
+                    ctx.fillRect(xy.x - tw/2 - 5, xy.y - 24, tw + 10, 14);
+                    ctx.fillStyle = active ? '#FFFFFF' : '#1D1917';
+                    ctx.fillText(label, xy.x - tw/2, xy.y - 14);
+                  });
+                }
+
+                function selectPin(idx) {
+                  selectedIdx = idx;
+                  var p = pts[idx];
+                  var pop = document.getElementById('pinPopup');
+                  if (p) {
+                    pop.style.display = 'block';
+                    pop.innerHTML = '<b>' + p.name + '</b> • ' + p.dist;
+                  }
+                  draw();
+                }
+
+                function changeZoom(factor) {
+                  zoom = Math.max(0.6, Math.min(3.0, zoom * factor));
+                  draw();
+                }
+
+                var dragging = false, sx = 0, sy = 0, moved = false;
+                canvas.addEventListener('touchstart', function(e) {
+                  if (e.touches.length === 1) {
+                    dragging = true; moved = false;
+                    sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+                  }
+                });
+                canvas.addEventListener('touchmove', function(e) {
+                  if (dragging && e.touches.length === 1) {
+                    var dx = e.touches[0].clientX - sx;
+                    var dy = e.touches[0].clientY - sy;
+                    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+                    panX += dx; panY += dy;
+                    sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+                    draw();
+                  }
+                });
+                canvas.addEventListener('touchend', function(e) {
+                  dragging = false;
+                  if (!moved && e.changedTouches.length === 1) {
+                    var rect = canvas.getBoundingClientRect();
+                    var tx = e.changedTouches[0].clientX - rect.left;
+                    var ty = e.changedTouches[0].clientY - rect.top;
+                    var best = -1, bestD = 28;
+                    pts.forEach(function(p, i) {
+                      var d = Math.hypot(p._x - tx, p._y - ty);
+                      if (d < bestD) { bestD = d; best = i; }
+                    });
+                    if (best >= 0) selectPin(best);
+                  }
+                });
+
+                window.addEventListener('resize', resize);
+                resize();
+                if (pts.length > 0) selectPin(0);
               </script>
             </body>
             </html>
         """.trimIndent()
 
-        webView.loadDataWithBaseURL("https://carto.com", html, "text/html", "UTF-8", null)
+        webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
     }
 
     private fun openExternalMapsForCity() {
@@ -181,27 +335,29 @@ class TheatersFragment : Fragment() {
         val lat = first?.lat ?: -7.7828
         val lng = first?.lng ?: 110.4012
 
-        val options = arrayOf(
-            "🗺️ Buka Google Maps (Semua Bioskop di $city)",
-            "📍 Pilih Bioskop Spesifik untuk Navigasi"
+        val options = listOf(
+            "Buka Google Maps ($city)" to "Tampilkan seluruh bioskop sekitar di peta",
+            "Pilih Bioskop Spesifik" to "Arahkan navigasi langsung ke salah satu bioskop"
         )
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Peta Bioskop Sekitar ($city)")
-            .setItems(options) { _, which ->
-                if (which == 0) {
-                    launchGeoUri("geo:$lat,$lng?q=" + Uri.encode("Bioskop $city"))
-                } else {
-                    val names = cinemas.map { "${it.name} (${it.distance})" }.toTypedArray()
-                    MaterialAlertDialogBuilder(requireContext())
-                        .setTitle("Pilih Bioskop")
-                        .setItems(names) { _, idx ->
-                            val c = cinemas[idx]
-                            launchGeoUri("geo:${c.lat},${c.lng}?q=${c.lat},${c.lng}(${Uri.encode(c.name)})")
-                        }
-                        .show()
-                }
+        ThemedOptionsBottomSheet(
+            title = "Peta Bioskop Sekitar ($city)",
+            subtitle = "Pilih cara membuka lokasi bioskop",
+            options = options
+        ) { which ->
+            if (which == 0) {
+                launchGeoUri("geo:$lat,$lng?q=" + Uri.encode("Bioskop $city"))
+            } else {
+                val cinemaOpts = cinemas.map { it.name to "${it.distance} • ${it.location}" }
+                ThemedOptionsBottomSheet(
+                    title = "Pilih Bioskop di $city",
+                    subtitle = "Ketuk untuk membuka rute Google Maps",
+                    options = cinemaOpts
+                ) { idx ->
+                    val c = cinemas[idx]
+                    launchGeoUri("geo:${c.lat},${c.lng}?q=${c.lat},${c.lng}(${Uri.encode(c.name)})")
+                }.show(parentFragmentManager, ThemedOptionsBottomSheet.TAG)
             }
-            .show()
+        }.show(parentFragmentManager, ThemedOptionsBottomSheet.TAG)
     }
 
     private fun launchGeoUri(geoUri: String) {
