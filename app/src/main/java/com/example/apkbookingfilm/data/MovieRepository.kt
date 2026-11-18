@@ -11,6 +11,7 @@ import com.example.apkbookingfilm.model.Cinema
 import com.example.apkbookingfilm.model.FoodItem
 import com.example.apkbookingfilm.model.FoodOrderItem
 import com.example.apkbookingfilm.model.Movie
+import com.example.apkbookingfilm.model.PaymentMethod
 import com.example.apkbookingfilm.model.User
 import org.json.JSONArray
 import org.json.JSONObject
@@ -32,18 +33,23 @@ class MovieRepository(context: Context) {
         private const val KEY_IS_LOGGED_IN = "is_logged_in"
         private const val KEY_USER_NAME = "user_name"
         private const val KEY_USER_EMAIL = "user_email"
-        private const val KEY_USER_POINTS = "user_points"
+        private const val KEY_USER_TIER = "user_tier"
+        private const val KEY_USER_AVATAR_URI = "user_avatar_uri"
+        private const val KEY_USER_POINTS = "user_points_v3"
         private const val KEY_AUTH_PROVIDER = "auth_provider"
         private const val KEY_SAVED_IDS = "saved_movie_ids_v2"
-        private const val KEY_TICKET_COUNT = "ticket_count"
-        private const val KEY_LATEST_BOOKING_ID = "latest_booking_id"
-        private const val KEY_LATEST_MOVIE_ID = "latest_movie_id"
-        private const val KEY_LATEST_CINEMA_NAME = "latest_cinema_name"
-        private const val KEY_LATEST_SEATS = "latest_seats"
-        private const val KEY_LATEST_DATE = "latest_date"
-        private const val KEY_LATEST_TIME = "latest_time"
-        private const val KEY_LATEST_TOTAL = "latest_total"
+        private const val KEY_TICKET_COUNT = "ticket_count_v3"
+        private const val KEY_LATEST_BOOKING_ID = "latest_booking_id_v3"
+        private const val KEY_LATEST_MOVIE_ID = "latest_movie_id_v3"
+        private const val KEY_LATEST_CINEMA_NAME = "latest_cinema_name_v3"
+        private const val KEY_LATEST_SEATS = "latest_seats_v3"
+        private const val KEY_LATEST_DATE = "latest_date_v3"
+        private const val KEY_LATEST_TIME = "latest_time_v3"
+        private const val KEY_LATEST_TOTAL = "latest_total_v3"
+        private const val KEY_LATEST_PAYMENT_METHOD = "latest_payment_method_v3"
         private const val KEY_SELECTED_CITY = "selected_city"
+        private const val KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
+        private const val KEY_SELECTED_PAYMENT_ID = "selected_payment_id"
 
         private const val CACHE_FILE = "tmdb_cache.json"
         private const val PAGES_PER_CATEGORY = 2
@@ -294,9 +300,23 @@ class MovieRepository(context: Context) {
             FoodItem("coca-cola", "COCA-COLA LARGE", "Minuman Bersoda Dingin 22oz", 22000, "Minuman", "")
         )
 
+        /** Metode pembayaran E-Wallet & Transfer Bank lengkap dengan logo. */
+        val paymentMethods: List<PaymentMethod> = listOf(
+            PaymentMethod("ovo", "OVO", "E-Wallet", "0812 8899 4566", "PT Cinema Booking ID", R.drawable.ic_pay_ovo),
+            PaymentMethod("gopay", "GoPay", "E-Wallet", "0812 8899 4566", "PT Cinema Booking ID", R.drawable.ic_pay_gopay),
+            PaymentMethod("dana", "DANA", "E-Wallet", "0812 8899 4566", "PT Cinema Booking ID", R.drawable.ic_pay_dana),
+            PaymentMethod("shopeepay", "ShopeePay", "E-Wallet", "0812 8899 4566", "PT Cinema Booking ID", R.drawable.ic_pay_shopeepay),
+            PaymentMethod("qris", "QRIS", "Instant QR", "ID102030405060", "Cinema Booking QRIS", R.drawable.ic_pay_qris),
+            PaymentMethod("bca", "Bank BCA", "Transfer Bank", "0373 8812 4566", "PT Cinema Booking Indonesia", R.drawable.ic_pay_bca),
+            PaymentMethod("mandiri", "Bank Mandiri", "Transfer Bank", "1370 0192 8844", "PT Cinema Booking Indonesia", R.drawable.ic_pay_mandiri),
+            PaymentMethod("bri", "Bank BRI", "Transfer Bank", "0029 0100 4455 501", "PT Cinema Booking Indonesia", R.drawable.ic_pay_bri),
+            PaymentMethod("bni", "Bank BNI", "Transfer Bank", "0884 7711 2299", "PT Cinema Booking Indonesia", R.drawable.ic_pay_bni)
+        )
+
         // Keranjang makanan global antar halaman (Home -> SeatSelection -> Payment)
         private val foodCart: MutableMap<String, Int> = linkedMapOf()
         private val foodCartListeners = mutableListOf<() -> Unit>()
+        private val profileListeners = mutableListOf<() -> Unit>()
 
         // Koordinat user hasil GPS scan (opsional)
         @Volatile private var userLat: Double? = null
@@ -323,6 +343,9 @@ class MovieRepository(context: Context) {
         fun addOnFoodCartChangedListener(listener: () -> Unit) { foodCartListeners.add(listener) }
         fun removeOnFoodCartChangedListener(listener: () -> Unit) { foodCartListeners.remove(listener) }
 
+        fun addOnProfileChangedListener(listener: () -> Unit) { profileListeners.add(listener) }
+        fun removeOnProfileChangedListener(listener: () -> Unit) { profileListeners.remove(listener) }
+
         private fun notifyListeners() {
             listeners.toList().forEach { it.invoke() }
         }
@@ -333,6 +356,10 @@ class MovieRepository(context: Context) {
 
         private fun notifyFoodCartListeners() {
             foodCartListeners.toList().forEach { it.invoke() }
+        }
+
+        private fun notifyProfileListeners() {
+            profileListeners.toList().forEach { it.invoke() }
         }
 
         fun formatRupiah(amount: Int): String {
@@ -593,7 +620,7 @@ class MovieRepository(context: Context) {
         return allMovies.find { it.id == id }
     }
 
-    // ================================================================ Authentication
+    // ================================================================ Authentication & Profile (Starts from 0)
     fun isLoggedIn(): Boolean {
         return prefs.getBoolean(KEY_IS_LOGGED_IN, false)
     }
@@ -601,22 +628,25 @@ class MovieRepository(context: Context) {
     fun getUser(): User {
         val isLoggedIn = isLoggedIn()
         return if (isLoggedIn) {
-            val name = prefs.getString(KEY_USER_NAME, "Daffa Fadhul Rahman") ?: "Daffa Fadhul Rahman"
-            val email = prefs.getString(KEY_USER_EMAIL, "daffasigma@gmail.com") ?: "daffasigma@gmail.com"
+            val name = prefs.getString(KEY_USER_NAME, "Cinema User") ?: "Cinema User"
+            val email = prefs.getString(KEY_USER_EMAIL, "") ?: ""
             val authProvider = prefs.getString(KEY_AUTH_PROVIDER, "Google") ?: "Google"
-            val points = prefs.getInt(KEY_USER_POINTS, 1240)
+            val tier = prefs.getString(KEY_USER_TIER, "MEMBER BARU • SINCE 2026") ?: "MEMBER BARU • SINCE 2026"
+            val avatarUri = prefs.getString(KEY_USER_AVATAR_URI, "") ?: ""
+            val points = prefs.getInt(KEY_USER_POINTS, 0)
             val initials = name.split(" ").filter { it.isNotEmpty() }
                 .map { it.first().uppercase() }
                 .take(2).joinToString("")
             User(
                 name = name,
                 email = email,
-                avatarInitials = if (initials.isNotEmpty()) initials else "DF",
-                moviesCount = prefs.getInt(KEY_TICKET_COUNT, 12),
+                avatarInitials = if (initials.isNotEmpty()) initials else "CU",
+                avatarUri = avatarUri,
+                moviesCount = prefs.getInt(KEY_TICKET_COUNT, 0),
                 savedCount = getSavedIds().size,
-                reviewsCount = 8,
+                reviewsCount = 0,
                 points = points,
-                membershipTier = "CINEMA PLUS • SINCE 2024",
+                membershipTier = tier,
                 authProvider = authProvider,
                 isLoggedIn = true
             )
@@ -625,6 +655,7 @@ class MovieRepository(context: Context) {
                 name = "Guest User",
                 email = "",
                 avatarInitials = "GU",
+                avatarUri = "",
                 moviesCount = 0,
                 savedCount = 0,
                 reviewsCount = 0,
@@ -636,15 +667,34 @@ class MovieRepository(context: Context) {
         }
     }
 
-    fun login(name: String = "Daffa Fadhul Rahman", email: String = "daffasigma@gmail.com", provider: String = "Google") {
+    fun login(name: String = "Cinema User", email: String = "user@cinemabooking.id", provider: String = "Google") {
+        val existingName = prefs.getString(KEY_USER_NAME, null)
+        val existingEmail = prefs.getString(KEY_USER_EMAIL, null)
         prefs.edit().apply {
             putBoolean(KEY_IS_LOGGED_IN, true)
-            putString(KEY_USER_NAME, name)
-            putString(KEY_USER_EMAIL, email)
+            if (existingName.isNullOrEmpty() || name != "Daffa Fadhul Rahman") {
+                putString(KEY_USER_NAME, name)
+            }
+            if (existingEmail.isNullOrEmpty() || email != "daffasigma@gmail.com") {
+                putString(KEY_USER_EMAIL, email)
+            }
             putString(KEY_AUTH_PROVIDER, provider)
-            putInt(KEY_USER_POINTS, prefs.getInt(KEY_USER_POINTS, 1240))
             apply()
         }
+        notifyProfileListeners()
+    }
+
+    fun updateProfile(name: String, email: String, tier: String, avatarUri: String? = null) {
+        prefs.edit().apply {
+            putString(KEY_USER_NAME, name.trim().ifEmpty { "Cinema User" })
+            putString(KEY_USER_EMAIL, email.trim())
+            putString(KEY_USER_TIER, tier.trim().ifEmpty { "MEMBER BARU • SINCE 2026" })
+            if (avatarUri != null) {
+                putString(KEY_USER_AVATAR_URI, avatarUri)
+            }
+            apply()
+        }
+        notifyProfileListeners()
     }
 
     fun logout() {
@@ -652,6 +702,24 @@ class MovieRepository(context: Context) {
             putBoolean(KEY_IS_LOGGED_IN, false)
             apply()
         }
+        notifyProfileListeners()
+    }
+
+    // ================================================================ Notifications & Payment Method
+
+    fun areNotificationsEnabled(): Boolean = prefs.getBoolean(KEY_NOTIFICATIONS_ENABLED, true)
+
+    fun setNotificationsEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_NOTIFICATIONS_ENABLED, enabled).apply()
+    }
+
+    fun getSelectedPaymentMethod(): PaymentMethod {
+        val id = prefs.getString(KEY_SELECTED_PAYMENT_ID, "bca") ?: "bca"
+        return paymentMethods.find { it.id == id } ?: paymentMethods.first()
+    }
+
+    fun setSelectedPaymentMethod(id: String) {
+        prefs.edit().putString(KEY_SELECTED_PAYMENT_ID, id).apply()
     }
 
     // ================================================================ Saved Films
@@ -670,6 +738,7 @@ class MovieRepository(context: Context) {
         }
         prefs.edit().putStringSet(KEY_SAVED_IDS, currentSet).apply()
         saveCache()
+        notifyProfileListeners()
         return isNowSaved
     }
 
@@ -680,8 +749,8 @@ class MovieRepository(context: Context) {
 
     // ================================================================ Booking
     fun saveBooking(booking: Booking) {
-        val ticketsCount = prefs.getInt(KEY_TICKET_COUNT, 12) + booking.seats.size
-        val currentPoints = prefs.getInt(KEY_USER_POINTS, 1240) + (booking.totalPrice / 1000)
+        val ticketsCount = prefs.getInt(KEY_TICKET_COUNT, 0) + booking.seats.size
+        val currentPoints = prefs.getInt(KEY_USER_POINTS, 0) + (booking.totalPrice / 1000)
         prefs.edit().apply {
             putString(KEY_LATEST_BOOKING_ID, booking.bookingId)
             putString(KEY_LATEST_MOVIE_ID, booking.movie.id)
@@ -690,25 +759,28 @@ class MovieRepository(context: Context) {
             putString(KEY_LATEST_DATE, booking.date)
             putString(KEY_LATEST_TIME, booking.time)
             putInt(KEY_LATEST_TOTAL, booking.totalPrice)
+            putString(KEY_LATEST_PAYMENT_METHOD, booking.paymentMethod)
             putInt(KEY_TICKET_COUNT, ticketsCount)
             putInt(KEY_USER_POINTS, currentPoints)
             apply()
         }
         upsertMovies(listOf(booking.movie))
         saveCache()
+        notifyProfileListeners()
     }
 
     fun getLatestBooking(): Booking? {
-        val bookingId = prefs.getString(KEY_LATEST_BOOKING_ID, null) ?: "BK-98421"
-        val movieId = prefs.getString(KEY_LATEST_MOVIE_ID, "dune-2") ?: "dune-2"
-        val movie = getMovieById(movieId) ?: allMovies[0]
+        val bookingId = prefs.getString(KEY_LATEST_BOOKING_ID, null) ?: return null
+        val movieId = prefs.getString(KEY_LATEST_MOVIE_ID, null) ?: return null
+        val movie = getMovieById(movieId) ?: allMovies.firstOrNull() ?: return null
         val cinemaName = prefs.getString(KEY_LATEST_CINEMA_NAME, "Ambarrukmo XXI") ?: "Ambarrukmo XXI"
-        val cinema = allCinemas.find { it.name == cinemaName } ?: cinemas[0]
-        val seatsStr = prefs.getString(KEY_LATEST_SEATS, "E6, E7") ?: "E6, E7"
-        val seats = seatsStr.split(", ")
-        val date = prefs.getString(KEY_LATEST_DATE, "Fri, 08 Nov • 19:30") ?: "Fri, 08 Nov • 19:30"
+        val cinema = allCinemas.find { it.name == cinemaName } ?: cinemas.first()
+        val seatsStr = prefs.getString(KEY_LATEST_SEATS, "") ?: ""
+        val seats = if (seatsStr.isNotEmpty()) seatsStr.split(", ") else emptyList()
+        val date = prefs.getString(KEY_LATEST_DATE, "Fri, 06 Nov") ?: "Fri, 06 Nov"
         val time = prefs.getString(KEY_LATEST_TIME, "19:30") ?: "19:30"
-        val total = prefs.getInt(KEY_LATEST_TOTAL, 50000)
+        val total = prefs.getInt(KEY_LATEST_TOTAL, 0)
+        val payMethod = prefs.getString(KEY_LATEST_PAYMENT_METHOD, "Bank BCA") ?: "Bank BCA"
 
         return Booking(
             bookingId = bookingId,
@@ -720,6 +792,7 @@ class MovieRepository(context: Context) {
             subtotal = total,
             serviceFee = 0,
             totalPrice = total,
+            paymentMethod = payMethod,
             isPaid = true
         )
     }

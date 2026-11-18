@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="40dp"
+    android:height="40dp"
+    android:viewportWidth="40"
+    android:viewportHeight="40">
+    <!-- GoPay Cyan-Blue Badge with Wallet Icon -->
+    <path
+        android:fillColor="#00AED6"
+        android:pathData="M8,0 L32,0 C36.4,0 40,3.6 40,8 L40,32 C40,36.4 36.4,40 32,40 L8,40 C3.6,40 0,36.4 0,32 L0,8 C0,3.6 3.6,0 8,0 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M10,13 C10,11.3 11.3,10 13,10 L27,10 C28.7,10 30,11.3 30,13 L30,27 C30,28.7 28.7,30 27,30 L13,30 C11.3,30 10,28.7 10,27 Z" />
+    <path
+        android:fillColor="#00AED6"
+        android:pathData="M21,17 L30,17 L30,23 L21,23 C19.3,23 18,21.7 18,20 C18,18.3 19.3,17 21,17 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M21.5,20 m-1.6,0 a1.6,1.6 0,1 0,3.2 0 a1.6,1.6 0,1 0,-3.2 0" />
+</vector>

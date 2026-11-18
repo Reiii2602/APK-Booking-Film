@@ -40,6 +40,7 @@ object UpdateNotifier {
      * dinotifikasi sekali (dipakai oleh pengecekan background).
      */
     fun showUpdateNotification(context: Context, info: UpdateInfo, onlyOnce: Boolean) {
+        if (!com.example.apkbookingfilm.data.MovieRepository(context).areNotificationsEnabled()) return
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         if (onlyOnce && prefs.getInt(KEY_LAST_NOTIFIED, 0) >= info.versionCode) return
 

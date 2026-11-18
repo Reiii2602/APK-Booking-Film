@@ -55,7 +55,7 @@ class TheatersFragment : Fragment() {
         if (granted) {
             scanGpsLocation()
         } else {
-            Toast.makeText(requireContext(), "Izin lokasi ditolak. Kamu bisa pilih kota secara manual.", Toast.LENGTH_SHORT).show()
+            com.example.apkbookingfilm.util.AppToast.show(requireContext(), "Izin lokasi ditolak. Pilih kota manual.")
         }
     }
 
@@ -121,6 +121,7 @@ class TheatersFragment : Fragment() {
         webView.setBackgroundColor(Color.TRANSPARENT)
         webView.settings.javaScriptEnabled = true
         webView.settings.domStorageEnabled = true
+        webView.settings.userAgentString = "CinemaBookingAndroid/1.0 (https://github.com/Reiii2602/APK-Booking-Film)"
         webView.webViewClient = WebViewClient()
     }
 
@@ -144,16 +145,16 @@ class TheatersFragment : Fragment() {
               <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
               <style>
                 html, body, #map { margin:0; padding:0; width:100%; height:100%; background:#F7EBE4; }
-                .leaflet-control-attribution { font-size: 8px !important; }
+                .leaflet-control-attribution { display: none !important; }
               </style>
             </head>
             <body>
               <div id="map"></div>
               <script>
-                var map = L.map('map', { zoomControl: false }).setView([$centerLat, $centerLng], 12);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                  maxZoom: 18,
-                  attribution: 'OSM'
+                var map = L.map('map', { zoomControl: false, attributionControl: false }).setView([$centerLat, $centerLng], 12);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png', {
+                  subdomains: 'abcd',
+                  maxZoom: 19
                 }).addTo(map);
                 var pts = [$markersJs];
                 var bounds = [];
@@ -164,13 +165,13 @@ class TheatersFragment : Fragment() {
                   m.bindPopup('<b>' + p.name + '</b><br/><small>' + p.loc + '</small>');
                   bounds.push([p.lat, p.lng]);
                 });
-                if (bounds.length > 1) { map.fitBounds(bounds, { padding: [24, 24] }); }
+                if (bounds.length > 1) { map.fitBounds(bounds, { padding: [26, 26] }); }
               </script>
             </body>
             </html>
         """.trimIndent()
 
-        webView.loadDataWithBaseURL("https://openstreetmap.org", html, "text/html", "UTF-8", null)
+        webView.loadDataWithBaseURL("https://carto.com", html, "text/html", "UTF-8", null)
     }
 
     private fun openExternalMapsForCity() {
@@ -225,7 +226,7 @@ class TheatersFragment : Fragment() {
             return
         }
 
-        Toast.makeText(ctx, "Mendeteksi lokasi sekitar...", Toast.LENGTH_SHORT).show()
+        com.example.apkbookingfilm.util.AppToast.show(ctx, "Mendeteksi lokasi sekitar...")
         val lm = ctx.getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return
         var best: Location? = null
         for (p in listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER, LocationManager.PASSIVE_PROVIDER)) {
@@ -258,7 +259,7 @@ class TheatersFragment : Fragment() {
                 if (_binding == null) return@getCurrentLocation
                 if (loc != null) onGpsFound(loc)
                 else if (best != null) onGpsFound(best)
-                else Toast.makeText(ctx, "GPS tidak mendapat sinyal, pilih kota manual.", Toast.LENGTH_SHORT).show()
+                else com.example.apkbookingfilm.util.AppToast.show(ctx, "GPS tidak mendapat sinyal, pilih kota manual.")
             }
         } else {
             @Suppress("DEPRECATION")
@@ -279,7 +280,7 @@ class TheatersFragment : Fragment() {
         refreshCinemasAndMap()
         val nearest = repository.getCinemasForCity(city).firstOrNull()
         val msg = if (nearest != null) "Lokasi terdeteksi: $city (${nearest.name} - ${nearest.distance})" else "Lokasi: $city"
-        Toast.makeText(requireContext(), msg, Toast.LENGTH_LONG).show()
+        com.example.apkbookingfilm.util.AppToast.show(requireContext(), msg, longDuration = true)
     }
 
     private fun setupListeners() {

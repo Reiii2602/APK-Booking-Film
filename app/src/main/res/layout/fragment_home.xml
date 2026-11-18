@@ -12,7 +12,7 @@
         android:orientation="vertical"
         android:paddingBottom="100dp">
 
-        <!-- Top Bar: Greeting & Search -->
+        <!-- Top Bar: Avatar / Greeting / Login & Search -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -21,6 +21,43 @@
             android:paddingHorizontal="20dp"
             android:paddingTop="16dp"
             android:paddingBottom="6dp">
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardUserAvatarHome"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:layout_marginEnd="10dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/maroon_dark"
+                app:cardCornerRadius="21dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/peach_border"
+                app:strokeWidth="1.5dp">
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <TextView
+                        android:id="@+id/tvUserAvatarHome"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:text="CU"
+                        android:textColor="@color/white"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:id="@+id/ivUserAvatarHome"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:visibility="gone" />
+                </FrameLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -32,19 +69,36 @@
                     android:id="@+id/tvWelcomeUser"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Welcome back"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="Cinema Booking"
                     android:textColor="@color/text_primary"
-                    android:textSize="24sp"
+                    android:textSize="22sp"
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/tvWelcomeSubtitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="Book your favorite movies &amp; snacks today"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="Masuk untuk simpan tiket &amp; kumpulkan poin"
                     android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
+                    android:textSize="11sp" />
             </LinearLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLoginTopHome"
+                style="@style/PrimaryMaroonButton"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_marginEnd="8dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:paddingHorizontal="14dp"
+                android:text="LOGIN"
+                android:textSize="11sp" />
 
             <ImageView
                 android:id="@+id/btnSearchHome"

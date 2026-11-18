@@ -67,7 +67,7 @@ class SavedFragment : Fragment() {
                 onBookClick = { movie -> openMovieDetail(movie) },
                 onRemoveSavedClick = { movie ->
                     repository.toggleSaved(movie.id)
-                    Toast.makeText(requireContext(), "Removed ${movie.title}", Toast.LENGTH_SHORT).show()
+                    com.example.apkbookingfilm.util.AppToast.show(requireContext(), "Dihapus: ${movie.title}")
                     refreshList()
                 }
             )

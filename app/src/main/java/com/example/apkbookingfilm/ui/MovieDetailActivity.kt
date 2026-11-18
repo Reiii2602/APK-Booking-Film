@@ -30,6 +30,7 @@ import com.example.apkbookingfilm.databinding.ItemShowtimeCinemaBinding
 import com.example.apkbookingfilm.databinding.ItemShowtimeSlotBinding
 import com.example.apkbookingfilm.model.Cinema
 import com.example.apkbookingfilm.model.Movie
+import com.example.apkbookingfilm.util.AppToast
 import com.example.apkbookingfilm.util.TmdbImageLoader
 import com.google.android.material.card.MaterialCardView
 import java.util.Locale
@@ -44,6 +45,12 @@ class MovieDetailActivity : AppCompatActivity() {
     private var selectedDate: String = "Fri, 06 Nov"
     private var selectedTime: String = ""
     private var selectedFormatFilter: String = "All formats"
+
+    private var preloadedTrailerKey: String = ""
+    private var isTrailerWebLoaded = false
+    private var wantPlayWhenLoaded = false
+    private var isTrailerPlaying = false
+    private var isTrailerMuted = false
 
     private val castAdapter = CastAdapter(emptyList())
 
@@ -121,6 +128,10 @@ class MovieDetailActivity : AppCompatActivity() {
             binding.tvCastEmpty.visibility = View.GONE
             binding.rvCast.visibility = View.VISIBLE
             castAdapter.updateList(movie.cast)
+        }
+
+        if (movie.trailerKey.isNotEmpty() && movie.trailerKey != preloadedTrailerKey) {
+            preloadTrailerWebView(movie.trailerKey)
         }
 
         updateBottomBar()
@@ -300,10 +311,22 @@ class MovieDetailActivity : AppCompatActivity() {
         binding.btnTrailer.setOnClickListener {
             val key = currentMovie?.trailerKey.orEmpty()
             if (key.isEmpty()) {
-                Toast.makeText(this, "Cuplikan trailer belum tersedia untuk film ini", Toast.LENGTH_SHORT).show()
+                AppToast.show(this, "Cuplikan trailer belum tersedia untuk film ini")
                 return@setOnClickListener
             }
-            playInlineTrailer(key)
+            showAndPlayInlineTrailer(key)
+        }
+
+        binding.viewTrailerTouchShield.setOnClickListener {
+            toggleTrailerPlayPause()
+        }
+
+        binding.btnPlayPauseTrailer.setOnClickListener {
+            toggleTrailerPlayPause()
+        }
+
+        binding.btnMuteTrailer.setOnClickListener {
+            toggleTrailerMute()
         }
 
         binding.btnCloseTrailer.setOnClickListener {
@@ -324,8 +347,8 @@ class MovieDetailActivity : AppCompatActivity() {
             val movie = currentMovie ?: return@setOnClickListener
             val isNowSaved = repository.toggleSaved(movie.id)
             updateBookmarkIcon()
-            val msg = if (isNowSaved) "Added to saved films" else "Removed from saved films"
-            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+            val msg = if (isNowSaved) "Ditambahkan ke film tersimpan" else "Dihapus dari film tersimpan"
+            AppToast.show(this, msg)
         }
 
         binding.btnChooseSeats.setOnClickListener {
@@ -342,9 +365,10 @@ class MovieDetailActivity : AppCompatActivity() {
     }
 
     @SuppressLint("SetJavaScriptEnabled")
-    private fun playInlineTrailer(youtubeKey: String) {
-        binding.layoutTrailerPlayer.visibility = View.VISIBLE
-        binding.progressTrailer.visibility = View.VISIBLE
+    private fun preloadTrailerWebView(youtubeKey: String) {
+        preloadedTrailerKey = youtubeKey
+        isTrailerWebLoaded = false
+        isTrailerPlaying = false
 
         val webView = binding.webTrailer
         webView.setBackgroundColor(Color.BLACK)
@@ -360,31 +384,72 @@ class MovieDetailActivity : AppCompatActivity() {
         webView.webChromeClient = WebChromeClient()
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
-                binding.progressTrailer.visibility = View.GONE
+                isTrailerWebLoaded = true
+                if (binding.layoutTrailerPlayer.visibility == View.VISIBLE) {
+                    binding.progressTrailer.visibility = View.GONE
+                    if (wantPlayWhenLoaded) {
+                        wantPlayWhenLoaded = false
+                        startPlaybackNow()
+                    }
+                }
             }
 
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                // Tetap tahan navigasi di dalam player in-app
-                return false
+                // Watch-only: blokir semua klik keluar / pencarian video lain di YouTube
+                return true
             }
         }
 
+        // Player YouTube IFrame API: dibungkus pointer-events:none dan di-crop vertikal 154%
+        // supaya logo YouTube, judul link, share, dan saran video hilang sepenuhnya (hanya nonton cuplikan)
         val html = """
             <!DOCTYPE html>
             <html>
             <head>
-              <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
               <style>
                 html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
-                iframe { width: 100%; height: 100%; border: 0; }
+                #wrap { position: fixed; left: 0; top: -27%; width: 100%; height: 154%; pointer-events: none; }
+                #player, iframe { width: 100%; height: 100%; border: 0; pointer-events: none; }
               </style>
             </head>
             <body>
-              <iframe
-                src="https://www.youtube-nocookie.com/embed/$youtubeKey?autoplay=1&playsinline=1&controls=1&rel=0&modestbranding=1"
-                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-                allowfullscreen>
-              </iframe>
+              <div id="wrap"><div id="player"></div></div>
+              <script src="https://www.youtube.com/iframe_api"></script>
+              <script>
+                var player = null;
+                var ready = false;
+                var pendingPlay = false;
+                function onYouTubeIframeAPIReady() {
+                  player = new YT.Player('player', {
+                    host: 'https://www.youtube-nocookie.com',
+                    videoId: '$youtubeKey',
+                    playerVars: {
+                      autoplay: 0, controls: 0, modestbranding: 1, rel: 0,
+                      iv_load_policy: 3, fs: 0, disablekb: 1, playsinline: 1,
+                      loop: 1, playlist: '$youtubeKey'
+                    },
+                    events: {
+                      onReady: function(e) {
+                        ready = true;
+                        e.target.mute();
+                        if (pendingPlay) {
+                          pendingPlay = false;
+                          e.target.unMute();
+                          e.target.playVideo();
+                        }
+                      }
+                    }
+                  });
+                }
+                function playNow(unmute) {
+                  if (!ready || !player) { pendingPlay = true; return; }
+                  if (unmute) player.unMute();
+                  player.playVideo();
+                }
+                function pauseNow() { pendingPlay = false; if (ready && player) player.pauseVideo(); }
+                function setMuted(m) { if (ready && player) { if (m) player.mute(); else player.unMute(); } }
+              </script>
             </body>
             </html>
         """.trimIndent()
@@ -398,15 +463,59 @@ class MovieDetailActivity : AppCompatActivity() {
         )
     }
 
+    private fun showAndPlayInlineTrailer(youtubeKey: String) {
+        if (youtubeKey != preloadedTrailerKey) {
+            preloadTrailerWebView(youtubeKey)
+        }
+        binding.layoutTrailerPlayer.visibility = View.VISIBLE
+        binding.webTrailer.onResume()
+        if (isTrailerWebLoaded) {
+            binding.progressTrailer.visibility = View.GONE
+            startPlaybackNow()
+        } else {
+            wantPlayWhenLoaded = true
+            binding.progressTrailer.visibility = View.VISIBLE
+        }
+    }
+
+    private fun startPlaybackNow() {
+        isTrailerPlaying = true
+        isTrailerMuted = false
+        binding.btnPlayPauseTrailer.text = "❚❚ PAUSE"
+        binding.btnMuteTrailer.text = "🔊 SUARA"
+        binding.webTrailer.evaluateJavascript("playNow(true);", null)
+    }
+
+    private fun toggleTrailerPlayPause() {
+        if (isTrailerPlaying) {
+            isTrailerPlaying = false
+            binding.btnPlayPauseTrailer.text = "▶ LANJUT"
+            binding.webTrailer.evaluateJavascript("pauseNow();", null)
+        } else {
+            isTrailerPlaying = true
+            binding.btnPlayPauseTrailer.text = "❚❚ PAUSE"
+            binding.webTrailer.evaluateJavascript("playNow(${!isTrailerMuted});", null)
+        }
+    }
+
+    private fun toggleTrailerMute() {
+        isTrailerMuted = !isTrailerMuted
+        binding.btnMuteTrailer.text = if (isTrailerMuted) "🔇 BISU" else "🔊 SUARA"
+        binding.webTrailer.evaluateJavascript("setMuted($isTrailerMuted);", null)
+    }
+
     private fun closeInlineTrailer() {
-        binding.webTrailer.stopLoading()
-        binding.webTrailer.loadUrl("about:blank")
-        binding.layoutTrailerPlayer.visibility = View.GONE
+        wantPlayWhenLoaded = false
+        isTrailerPlaying = false
+        binding.webTrailer.evaluateJavascript("pauseNow();", null)
+        binding.layoutTrailerPlayer.visibility = View.INVISIBLE
     }
 
     override fun onPause() {
         super.onPause()
         if (binding.layoutTrailerPlayer.visibility == View.VISIBLE) {
+            isTrailerPlaying = false
+            binding.webTrailer.evaluateJavascript("pauseNow();", null)
             binding.webTrailer.onPause()
         }
     }

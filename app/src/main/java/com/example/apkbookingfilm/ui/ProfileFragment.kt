@@ -5,14 +5,20 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import com.bumptech.glide.Glide
 import com.example.apkbookingfilm.BuildConfig
 import com.example.apkbookingfilm.MainActivity
+import com.example.apkbookingfilm.R
 import com.example.apkbookingfilm.data.MovieRepository
 import com.example.apkbookingfilm.databinding.FragmentProfileBinding
 import com.example.apkbookingfilm.update.UpdateManager
+import com.example.apkbookingfilm.util.AppToast
+import java.io.File
+import java.text.NumberFormat
+import java.util.Locale
 
 class ProfileFragment : Fragment() {
 
@@ -20,7 +26,13 @@ class ProfileFragment : Fragment() {
     private val binding get() = _binding!!
     private lateinit var repository: MovieRepository
 
-    private var hasAutoShownLoginPrompt = false
+    private val onCityChangedListener = {
+        if (_binding != null) updateCityViews()
+    }
+
+    private val onProfileChangedListener = {
+        if (_binding != null) updateProfileUI()
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -34,6 +46,8 @@ class ProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         repository = MovieRepository(requireContext())
+        MovieRepository.addOnCityChangedListener(onCityChangedListener)
+        MovieRepository.addOnProfileChangedListener(onProfileChangedListener)
 
         updateProfileUI()
         setupListeners()
@@ -54,7 +68,15 @@ class ProfileFragment : Fragment() {
         }
     }
 
+    private fun updateCityViews() {
+        val city = repository.getSelectedCity()
+        binding.tvPreferredCity.text = city
+        binding.tvPreferredCityGuest.text = city
+    }
+
     fun updateProfileUI() {
+        updateCityViews()
+
         val user = repository.getUser()
         if (user.isLoggedIn) {
             binding.layoutNotLoggedIn.visibility = View.GONE
@@ -62,17 +84,54 @@ class ProfileFragment : Fragment() {
             binding.tvProfileSubtitle.text = "Manage your account, tickets and preferences."
 
             binding.tvAvatarInitials.text = user.avatarInitials
+            if (user.avatarUri.isNotEmpty() && File(user.avatarUri).exists()) {
+                binding.ivAvatarPhoto.visibility = View.VISIBLE
+                Glide.with(this)
+                    .load(File(user.avatarUri))
+                    .skipMemoryCache(true)
+                    .circleCrop()
+                    .into(binding.ivAvatarPhoto)
+            } else {
+                binding.ivAvatarPhoto.visibility = View.GONE
+            }
+
             binding.tvUserName.text = user.name
-            binding.tvUserEmail.text = user.email
+            binding.tvUserEmail.text = user.email.ifEmpty { "Ketuk ikon pensil untuk lengkapi email" }
+            binding.tvMembershipTier.text = user.membershipTier
 
             binding.tvTicketsBookedCount.text = user.moviesCount.toString()
+            binding.tvMyTicketsCountRow.text = user.moviesCount.toString()
             binding.tvSavedFilmsCount.text = user.savedCount.toString()
-            binding.tvPointsValue.text = String.format("%,d", user.points)
+            binding.tvPointsValue.text = NumberFormat.getIntegerInstance(Locale("in", "ID")).format(user.points)
+
+            val latest = repository.getLatestBooking()
+            if (latest != null) {
+                binding.cardNextScreening.visibility = View.VISIBLE
+                binding.tvNextMovieTitle.text = latest.movie.title
+                val seatStr = if (latest.seats.isNotEmpty()) " • Seats ${latest.seats.joinToString(", ")}" else ""
+                binding.tvNextMovieSchedule.text = "${latest.date} • ${latest.time} • ${latest.cinema.name}$seatStr"
+            } else {
+                binding.cardNextScreening.visibility = View.GONE
+            }
+
+            val payMethod = repository.getSelectedPaymentMethod()
+            binding.ivPaymentMethodRow.setImageResource(payMethod.logoResId)
+            binding.tvPaymentMethodValue.text = payMethod.name
+
+            updateNotificationRowUI()
         } else {
             binding.layoutNotLoggedIn.visibility = View.VISIBLE
             binding.layoutLoggedIn.visibility = View.GONE
             binding.tvProfileSubtitle.text = "Sign in to see your tickets, saved films and rewards."
         }
+    }
+
+    private fun updateNotificationRowUI() {
+        val enabled = repository.areNotificationsEnabled()
+        binding.tvNotificationsStatus.text = if (enabled) "On" else "Off"
+        binding.tvNotificationsStatus.setTextColor(
+            ContextCompat.getColor(requireContext(), if (enabled) R.color.green_success else R.color.text_muted)
+        )
     }
 
     private fun setupListeners() {
@@ -84,88 +143,105 @@ class ProfileFragment : Fragment() {
             (activity as? MainActivity)?.selectTab(1)
         }
 
-        // Not Logged In State buttons
-        binding.btnSignInWhite.setOnClickListener {
-            showLoginBottomSheet()
+        // Edit Profile (Nickname, Email, Photo)
+        val openEditProfile = {
+            EditProfileBottomSheet { updateProfileUI() }.show(parentFragmentManager, EditProfileBottomSheet.TAG)
         }
+        binding.btnEditProfile.setOnClickListener { openEditProfile() }
+        binding.layoutAvatarProfile.setOnClickListener { openEditProfile() }
 
-        binding.btnCreateAccount.setOnClickListener {
-            showLoginBottomSheet()
-        }
+        // Not Logged In State buttons
+        binding.btnSignInWhite.setOnClickListener { showLoginBottomSheet() }
+        binding.btnCreateAccount.setOnClickListener { showLoginBottomSheet() }
 
         binding.btnGoogleQuickLogin.setOnClickListener {
-            repository.login("Daffa Fadhul Rahman", "daffasigma@gmail.com", "Google")
-            Toast.makeText(requireContext(), "Signed in with Google as Daffa Fadhul Rahman", Toast.LENGTH_SHORT).show()
+            repository.login("Cinema User", "user@gmail.com", "Google")
+            AppToast.show(requireContext(), "Berhasil masuk dengan Google")
             updateProfileUI()
         }
 
         binding.btnAppleQuickLogin.setOnClickListener {
-            repository.login("Daffa Fadhul Rahman", "daffasigma@gmail.com", "Apple")
-            Toast.makeText(requireContext(), "Signed in with Apple", Toast.LENGTH_SHORT).show()
+            repository.login("Cinema User", "user@icloud.com", "Apple")
+            AppToast.show(requireContext(), "Berhasil masuk dengan Apple")
             updateProfileUI()
         }
 
         // Next Screening View E-Ticket
         binding.btnViewETicket.setOnClickListener {
             val booking = repository.getLatestBooking()
-            val intent = Intent(requireContext(), TicketSuccessActivity::class.java).apply {
-                putExtra(TicketSuccessActivity.EXTRA_BOOKING, booking)
+            if (booking == null) {
+                AppToast.show(requireContext(), "Belum ada tiket aktif")
+                return@setOnClickListener
             }
-            startActivity(intent)
+            startActivity(Intent(requireContext(), TicketSuccessActivity::class.java).apply {
+                putExtra(TicketSuccessActivity.EXTRA_BOOKING, booking)
+            })
         }
 
         // Account rows
         binding.btnRowMyTickets.setOnClickListener {
             val booking = repository.getLatestBooking()
-            val intent = Intent(requireContext(), TicketSuccessActivity::class.java).apply {
-                putExtra(TicketSuccessActivity.EXTRA_BOOKING, booking)
+            if (booking == null) {
+                AppToast.show(requireContext(), "Belum ada tiket aktif. Yuk pesan film dulu!")
+                return@setOnClickListener
             }
-            startActivity(intent)
+            startActivity(Intent(requireContext(), TicketSuccessActivity::class.java).apply {
+                putExtra(TicketSuccessActivity.EXTRA_BOOKING, booking)
+            })
         }
 
         binding.btnRowPaymentMethods.setOnClickListener {
-            Toast.makeText(requireContext(), "Payment method: Bank BCA (Active)", Toast.LENGTH_SHORT).show()
+            PaymentMethodBottomSheet { method ->
+                binding.ivPaymentMethodRow.setImageResource(method.logoResId)
+                binding.tvPaymentMethodValue.text = method.name
+                AppToast.show(requireContext(), "Metode pembayaran: ${method.name}")
+            }.show(parentFragmentManager, PaymentMethodBottomSheet.TAG)
         }
 
         binding.btnRowNotifications.setOnClickListener {
-            Toast.makeText(requireContext(), "Notifications: ON", Toast.LENGTH_SHORT).show()
+            val next = !repository.areNotificationsEnabled()
+            repository.setNotificationsEnabled(next)
+            updateNotificationRowUI()
+            AppToast.show(requireContext(), if (next) "Notifikasi: ON" else "Notifikasi: OFF")
         }
 
-        binding.tvPreferredCity.text = repository.getSelectedCity()
-        binding.btnRowPreferredCity.setOnClickListener {
+        val openCityPicker = {
             CityPickerDialog { chosen ->
-                binding.tvPreferredCity.text = chosen
-                Toast.makeText(requireContext(), "Kota diubah ke $chosen", Toast.LENGTH_SHORT).show()
+                updateCityViews()
+                AppToast.show(requireContext(), "Kota diubah ke $chosen")
             }.show(parentFragmentManager, CityPickerDialog.TAG)
         }
+        binding.btnRowPreferredCity.setOnClickListener { openCityPicker() }
+        binding.btnRowPreferredCityGuest.setOnClickListener { openCityPicker() }
 
         binding.btnRowHelpSupport.setOnClickListener {
-            Toast.makeText(requireContext(), "Cinema Support • support@cinemabooking.com", Toast.LENGTH_SHORT).show()
+            AppToast.show(requireContext(), "Cinema Support • support@cinemabooking.com")
         }
 
         binding.tvAppVersion.text = "v${BuildConfig.VERSION_NAME}"
         binding.btnRowCheckUpdate.setOnClickListener {
-            Toast.makeText(requireContext(), "Memeriksa pembaruan...", Toast.LENGTH_SHORT).show()
+            AppToast.show(requireContext(), "Memeriksa pembaruan...")
             UpdateManager.checkForUpdate(requireActivity(), forceDialog = true, showUpToDateToast = true)
         }
 
         binding.btnLogout.setOnClickListener {
             AlertDialog.Builder(requireContext())
                 .setTitle("Log Out")
-                .setMessage("Are you sure you want to log out of your account?")
+                .setMessage("Yakin ingin keluar dari akun kamu?")
                 .setPositiveButton("Log Out") { _, _ ->
                     repository.logout()
-                    hasAutoShownLoginPrompt = false
                     updateProfileUI()
-                    Toast.makeText(requireContext(), "Logged out", Toast.LENGTH_SHORT).show()
+                    AppToast.show(requireContext(), "Berhasil keluar akun")
                 }
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton("Batal", null)
                 .show()
         }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        MovieRepository.removeOnCityChangedListener(onCityChangedListener)
+        MovieRepository.removeOnProfileChangedListener(onProfileChangedListener)
         _binding = null
     }
 }

@@ -24,7 +24,8 @@ class MovieAdapter(
     private val onMovieClick: (Movie) -> Unit,
     private val onBookClick: ((Movie) -> Unit)? = null,
     private val onRemoveSavedClick: ((Movie) -> Unit)? = null,
-    private val onSeeMoreClick: (() -> Unit)? = null
+    private val onSeeMoreClick: (() -> Unit)? = null,
+    private val infiniteLoop: Boolean = false
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
@@ -45,11 +46,25 @@ class MovieAdapter(
         notifyItemRangeInserted(start, toAdd.size)
     }
 
-    fun getItemAt(position: Int): Movie? = movies.getOrNull(position)
+    fun getItemAt(position: Int): Movie? {
+        if (movies.isEmpty()) return null
+        return if (infiniteLoop && movies.size > 1) {
+            movies[position.mod(movies.size)]
+        } else {
+            movies.getOrNull(position)
+        }
+    }
 
-    private fun hasSeeMore(): Boolean = onSeeMoreClick != null && movies.isNotEmpty()
+    fun getRealCount(): Int = movies.size
 
-    override fun getItemCount(): Int = if (hasSeeMore()) movies.size + 1 else movies.size
+    private fun isInfinite(): Boolean = infiniteLoop && movies.size > 1
+
+    private fun hasSeeMore(): Boolean = !isInfinite() && onSeeMoreClick != null && movies.isNotEmpty()
+
+    override fun getItemCount(): Int {
+        if (isInfinite()) return Int.MAX_VALUE
+        return if (hasSeeMore()) movies.size + 1 else movies.size
+    }
 
     override fun getItemViewType(position: Int): Int {
         if (hasSeeMore() && position == movies.size) return VIEW_TYPE_SEE_MORE
@@ -78,7 +93,7 @@ class MovieAdapter(
             holder.bind()
             return
         }
-        val movie = movies[position]
+        val movie = getItemAt(position) ?: return
         when (holder) {
             is MovieCardViewHolder -> holder.bind(movie)
             is NowShowingViewHolder -> holder.bind(movie)

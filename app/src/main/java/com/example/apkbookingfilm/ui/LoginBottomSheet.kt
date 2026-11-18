@@ -4,10 +4,10 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import com.example.apkbookingfilm.R
 import com.example.apkbookingfilm.data.MovieRepository
 import com.example.apkbookingfilm.databinding.BottomSheetLoginBinding
+import com.example.apkbookingfilm.util.AppToast
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
 class LoginBottomSheet(
@@ -34,24 +34,16 @@ class LoginBottomSheet(
 
         // Continue with Google
         binding.btnContinueWithGoogle.setOnClickListener {
-            repository.login("Daffa Fadhul Rahman", "daffasigma@gmail.com", "Google")
-            Toast.makeText(
-                requireContext(),
-                "Signed in successfully with Google!",
-                Toast.LENGTH_SHORT
-            ).show()
+            repository.login("Cinema User", "user@gmail.com", "Google")
+            AppToast.show(requireContext(), "Berhasil masuk dengan Google")
             onLoginSuccess()
             dismiss()
         }
 
         // Continue with Apple
         binding.btnContinueWithApple.setOnClickListener {
-            repository.login("Daffa Fadhul Rahman", "daffasigma@gmail.com", "Apple")
-            Toast.makeText(
-                requireContext(),
-                "Signed in successfully with Apple!",
-                Toast.LENGTH_SHORT
-            ).show()
+            repository.login("Cinema User", "user@icloud.com", "Apple")
+            AppToast.show(requireContext(), "Berhasil masuk dengan Apple")
             onLoginSuccess()
             dismiss()
         }
@@ -60,20 +52,16 @@ class LoginBottomSheet(
         binding.btnEmailSignIn.setOnClickListener {
             val email = binding.etEmail.text?.toString()?.trim()
             if (email.isNullOrEmpty()) {
-                binding.tilEmail.error = "Please enter an email"
+                binding.tilEmail.error = "Masukkan email terlebih dahulu"
                 return@setOnClickListener
             }
             val name = if (email.contains("@")) {
                 email.substringBefore("@").replace(".", " ").capitalizeWords()
             } else {
-                "Daffa Fadhul Rahman"
+                "Cinema User"
             }
             repository.login(name, email, "Email")
-            Toast.makeText(
-                requireContext(),
-                "Signed in successfully as $name",
-                Toast.LENGTH_SHORT
-            ).show()
+            AppToast.show(requireContext(), "Selamat datang, $name!")
             onLoginSuccess()
             dismiss()
         }

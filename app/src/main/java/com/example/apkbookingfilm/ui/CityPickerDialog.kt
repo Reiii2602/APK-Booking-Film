@@ -13,7 +13,6 @@ import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.widget.addTextChangedListener
@@ -23,6 +22,7 @@ import com.example.apkbookingfilm.R
 import com.example.apkbookingfilm.data.MovieRepository
 import com.example.apkbookingfilm.databinding.DialogCityPickerBinding
 import com.example.apkbookingfilm.databinding.ItemCityBinding
+import com.example.apkbookingfilm.util.AppToast
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
 class CityPickerDialog(
@@ -181,11 +181,11 @@ class CityPickerDialog(
         val nearest = repository.getCinemasForCity(detectedCity).firstOrNull()
         val distStr = nearest?.let { " • Terdekat: ${it.name} (${it.distance})" }.orEmpty()
         binding.btnScanLocation.isEnabled = true
-        Toast.makeText(
+        AppToast.show(
             requireContext(),
             "Lokasi terdeteksi: $detectedCity$distStr",
-            Toast.LENGTH_LONG
-        ).show()
+            longDuration = true
+        )
         onCitySelected(detectedCity)
         dismiss()
     }

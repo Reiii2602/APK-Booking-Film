@@ -9,7 +9,6 @@ import android.os.Bundle
 import android.os.CountDownTimer
 import android.provider.OpenableColumns
 import android.view.View
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
@@ -19,6 +18,8 @@ import com.example.apkbookingfilm.model.Booking
 import com.example.apkbookingfilm.model.Cinema
 import com.example.apkbookingfilm.model.FoodOrderItem
 import com.example.apkbookingfilm.model.Movie
+import com.example.apkbookingfilm.model.PaymentMethod
+import com.example.apkbookingfilm.util.AppToast
 import java.util.Locale
 
 class PaymentActivity : AppCompatActivity() {
@@ -33,6 +34,7 @@ class PaymentActivity : AppCompatActivity() {
     private var seats: ArrayList<String> = arrayListOf()
     private var foodItems: ArrayList<FoodOrderItem> = arrayListOf()
     private var isFoodOnly: Boolean = false
+    private lateinit var selectedPaymentMethod: PaymentMethod
 
     private var seatSubtotal: Int = 0
     private var foodTotal: Int = 0
@@ -55,6 +57,7 @@ class PaymentActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         repository = MovieRepository(this)
+        selectedPaymentMethod = repository.getSelectedPaymentMethod()
 
         isFoodOnly = intent.getBooleanExtra(EXTRA_FOOD_ONLY, false)
         movie = intent.getSerializableExtra(EXTRA_MOVIE) as? Movie ?: repository.movies[0]
@@ -83,8 +86,18 @@ class PaymentActivity : AppCompatActivity() {
         binding.cardProofPreview.visibility = View.GONE
 
         setupOrderSummary()
+        updatePaymentMethodUI()
         setupTimer()
         setupListeners()
+    }
+
+    private fun updatePaymentMethodUI() {
+        binding.ivSelectedPayLogo.setImageResource(selectedPaymentMethod.logoResId)
+        binding.tvPaymentBankName.text = selectedPaymentMethod.name
+        binding.tvPaymentBankType.text = selectedPaymentMethod.type
+        binding.tvPaymentAccountNumber.text = selectedPaymentMethod.accountNumber
+        binding.tvPaymentAccountHolder.text = selectedPaymentMethod.accountHolder
+        binding.tvPaymentSectionTitle.text = selectedPaymentMethod.type.uppercase(Locale.US)
     }
 
     private fun setupOrderSummary() {
@@ -161,7 +174,6 @@ class PaymentActivity : AppCompatActivity() {
         binding.tvUploadedFileSize.text = "✓ $sizeText • Terunggah"
         binding.cardUploadedFile.visibility = View.VISIBLE
 
-        // Tampilkan preview gambar bukti SS persis di bawahnya
         binding.cardProofPreview.visibility = View.VISIBLE
         Glide.with(this)
             .load(uri)
@@ -174,14 +186,24 @@ class PaymentActivity : AppCompatActivity() {
         }
 
         binding.btnBookmarkPayment.setOnClickListener {
-            Toast.makeText(this, "Order saved to pending", Toast.LENGTH_SHORT).show()
+            AppToast.show(this, "Order disimpan sementara")
         }
+
+        val openPaymentPicker = {
+            PaymentMethodBottomSheet { method ->
+                selectedPaymentMethod = method
+                updatePaymentMethodUI()
+                AppToast.show(this, "Metode dipilih: ${method.name}")
+            }.show(supportFragmentManager, PaymentMethodBottomSheet.TAG)
+        }
+        binding.btnChangePaymentMethod.setOnClickListener { openPaymentPicker() }
+        binding.rowSelectedPaymentHeader.setOnClickListener { openPaymentPicker() }
 
         binding.btnCopyAccount.setOnClickListener {
             val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            val clip = ClipData.newPlainText("Account Number", "0373 8812 4566")
+            val clip = ClipData.newPlainText("Account Number", selectedPaymentMethod.accountNumber)
             clipboard.setPrimaryClip(clip)
-            Toast.makeText(this, "Copied Bank BCA account: 0373 8812 4566", Toast.LENGTH_SHORT).show()
+            AppToast.show(this, "Disalin: ${selectedPaymentMethod.accountNumber}")
         }
 
         binding.btnCopyAmount.setOnClickListener {
@@ -189,10 +211,9 @@ class PaymentActivity : AppCompatActivity() {
             val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             val clip = ClipData.newPlainText("Transfer Amount", amountStr)
             clipboard.setPrimaryClip(clip)
-            Toast.makeText(this, "Nominal disalin: $amountStr", Toast.LENGTH_SHORT).show()
+            AppToast.show(this, "Nominal disalin: $amountStr")
         }
 
-        // Buka galeri / file picker untuk pilih foto screenshot bukti transfer asli
         binding.cardUploadDashed.setOnClickListener {
             pickImageLauncher.launch("image/*")
         }
@@ -207,7 +228,7 @@ class PaymentActivity : AppCompatActivity() {
         binding.btnSubmitPaymentProof.setOnClickListener {
             val proof = selectedProofUri
             if (proof == null) {
-                Toast.makeText(this, "Silakan upload screenshot bukti transfer terlebih dahulu", Toast.LENGTH_SHORT).show()
+                AppToast.show(this, "Silakan upload screenshot bukti transfer terlebih dahulu")
                 return@setOnClickListener
             }
 
@@ -225,7 +246,7 @@ class PaymentActivity : AppCompatActivity() {
                 subtotal = seatSubtotal,
                 serviceFee = 0,
                 totalPrice = grandTotal,
-                paymentMethod = "Bank Transfer BCA",
+                paymentMethod = selectedPaymentMethod.name,
                 paymentProofUploaded = true,
                 isPaid = true,
                 foodItems = foodItems,

@@ -54,7 +54,7 @@ class TicketSuccessActivity : AppCompatActivity() {
         }
 
         binding.btnSaveTicket.setOnClickListener {
-            Toast.makeText(this, "Ticket saved to gallery & profile!", Toast.LENGTH_SHORT).show()
+            com.example.apkbookingfilm.util.AppToast.show(this, "E-Ticket tersimpan di profil!")
         }
 
         binding.btnBackToHome.setOnClickListener {

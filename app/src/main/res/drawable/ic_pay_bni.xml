@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="40dp"
+    android:height="40dp"
+    android:viewportWidth="40"
+    android:viewportHeight="40">
+    <!-- Bank BNI Teal + Orange Accent -->
+    <path
+        android:fillColor="#006677"
+        android:pathData="M8,0 L32,0 C36.4,0 40,3.6 40,8 L40,32 C40,36.4 36.4,40 32,40 L8,40 C3.6,40 0,36.4 0,32 L0,8 C0,3.6 3.6,0 8,0 Z" />
+    <path
+        android:fillColor="#F15A24"
+        android:pathData="M10,12 L30,12 L30,17 L10,17 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M11,20 L29,20 L29,23.5 L11,23.5 Z M11,26 L23,26 L23,29.5 L11,29.5 Z" />
+</vector>
