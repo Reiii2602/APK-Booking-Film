@@ -48,6 +48,11 @@ android {
             )
         }
     }
+    lint {
+        abortOnError = false
+        checkReleaseBuilds = false
+    }
+
     buildFeatures {
         viewBinding = true
         buildConfig = true

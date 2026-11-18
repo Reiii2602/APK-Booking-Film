@@ -31,11 +31,14 @@ jobs:
           VC=$((GITHUB_RUN_NUMBER + 1))
           echo "code=$VC" >> "$GITHUB_OUTPUT"
           echo "tag=v1.0.$VC" >> "$GITHUB_OUTPUT"
-          RAW_MSG=$(git log -1 --pretty=%s)
-          echo "msg=$RAW_MSG" >> "$GITHUB_OUTPUT"
+          {
+            echo "msg<<EOF"
+            git log -1 --pretty=%B | head -n 10
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Build signed Release APK
-        run: ./gradlew assembleRelease -PversionCode=${{ steps.ver.outputs.code }} --no-daemon
+        run: ./gradlew assembleRelease -PversionCode=${{ steps.ver.outputs.code }} --no-daemon --stacktrace
 
       - name: Copy & rename APK
         run: |
