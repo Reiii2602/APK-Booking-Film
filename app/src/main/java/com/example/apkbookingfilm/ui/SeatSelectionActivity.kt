@@ -192,12 +192,12 @@ class SeatSelectionActivity : AppCompatActivity() {
         }
 
         binding.btnBookmarkSeats.setOnClickListener {
-            Toast.makeText(this, "Showtime saved", Toast.LENGTH_SHORT).show()
+            com.example.apkbookingfilm.util.AppToast.show(this, "Jadwal disimpan")
         }
 
         binding.btnContinueToPayment.setOnClickListener {
             if (selectedSeatNames.isEmpty()) {
-                Toast.makeText(this, "Silakan pilih minimal 1 kursi", Toast.LENGTH_SHORT).show()
+                com.example.apkbookingfilm.util.AppToast.show(this, "Silakan pilih minimal 1 kursi")
                 return@setOnClickListener
             }
 

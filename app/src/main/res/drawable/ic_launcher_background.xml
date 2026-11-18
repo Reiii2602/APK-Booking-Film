@@ -1,29 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:pathData="M0,0h108v108h-108z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:endX="108"
-                android:endY="108"
-                android:startX="0"
-                android:startY="0"
-                android:type="linear">
-                <item
-                    android:color="#8F2238"
-                    android:offset="0.0" />
-                <item
-                    android:color="#581220"
-                    android:offset="1.0" />
-            </gradient>
-        </aapt:attr>
-    </path>
-    <!-- Subtle spotlight glow -->
+    <!-- Pure vector paths (no aapt:attr gradient) so SystemUI/OEM toast renderers never fallback to Android robot -->
+    <path
+        android:fillColor="#781D2E"
+        android:pathData="M0,0h108v108h-108z" />
+    <path
+        android:fillColor="#581220"
+        android:pathData="M0,62 L108,34 L108,108 L0,108 Z" />
     <path
         android:fillColor="#1AFBF2EC"
-        android:pathData="M54,54m-44,0a44,44 0,1 1,88 0a44,44 0,1 1,-88 0" />
+        android:pathData="M54,54m-42,0a42,42 0,1 1,84 0a42,42 0,1 1,-84 0" />
 </vector>

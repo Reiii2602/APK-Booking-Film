@@ -49,7 +49,7 @@ object UpdateManager {
             mainHandler.post {
                 if (activity.isFinishing || activity.isDestroyed) return@post
                 if (info == null) {
-                    if (showUpToDateToast) Toast.makeText(activity, "Gagal cek update. Periksa koneksi internet.", Toast.LENGTH_SHORT).show()
+                    if (showUpToDateToast) com.example.apkbookingfilm.util.AppToast.show(activity, "Gagal cek update. Periksa koneksi internet.")
                     return@post
                 }
                 latestInfo = info
@@ -57,7 +57,7 @@ object UpdateManager {
                     UpdateNotifier.showUpdateNotification(activity, info, onlyOnce = true)
                     if (forceDialog || !dismissedThisSession) showUpdateDialog(activity, info)
                 } else if (showUpToDateToast) {
-                    Toast.makeText(activity, "Aplikasi sudah versi terbaru (v${BuildConfig.VERSION_NAME})", Toast.LENGTH_SHORT).show()
+                    com.example.apkbookingfilm.util.AppToast.show(activity, "Aplikasi sudah versi terbaru (v${BuildConfig.VERSION_NAME})")
                 }
             }
         }
@@ -240,7 +240,7 @@ object UpdateManager {
         try {
             activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(info.apkUrl)))
         } catch (_: ActivityNotFoundException) {
-            Toast.makeText(activity, "Tidak bisa membuka link update", Toast.LENGTH_SHORT).show()
+            com.example.apkbookingfilm.util.AppToast.show(activity, "Tidak bisa membuka link update")
         }
     }
 }

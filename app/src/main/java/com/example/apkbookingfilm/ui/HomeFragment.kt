@@ -6,11 +6,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.PagerSnapHelper
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.example.apkbookingfilm.MainActivity
 import com.example.apkbookingfilm.R
 import com.example.apkbookingfilm.adapter.FoodAdapter
@@ -21,7 +21,9 @@ import com.example.apkbookingfilm.data.MovieRepository
 import com.example.apkbookingfilm.data.TmdbApi.Category
 import com.example.apkbookingfilm.databinding.FragmentHomeBinding
 import com.example.apkbookingfilm.model.Movie
+import com.example.apkbookingfilm.util.AppToast
 import com.example.apkbookingfilm.util.TmdbImageLoader
+import java.io.File
 
 class HomeFragment : Fragment() {
 
@@ -42,6 +44,13 @@ class HomeFragment : Fragment() {
     private val onCityChangedListener = {
         if (_binding != null) {
             updateCityDisplay()
+            setupGreeting()
+        }
+    }
+
+    private val onProfileChangedListener = {
+        if (_binding != null) {
+            setupGreeting()
         }
     }
 
@@ -59,6 +68,7 @@ class HomeFragment : Fragment() {
         repository = MovieRepository(requireContext())
         MovieRepository.addOnMoviesUpdatedListener(onMoviesUpdatedListener)
         MovieRepository.addOnCityChangedListener(onCityChangedListener)
+        MovieRepository.addOnProfileChangedListener(onProfileChangedListener)
 
         setupGreeting()
         updateCityDisplay()
@@ -92,11 +102,28 @@ class HomeFragment : Fragment() {
 
     private fun setupGreeting() {
         val user = repository.getUser()
+        val city = repository.getSelectedCity()
         if (user.isLoggedIn) {
-            val firstName = user.name.split(" ").firstOrNull() ?: user.name
-            binding.tvWelcomeUser.text = "Welcome back, $firstName"
+            binding.btnLoginTopHome.visibility = View.GONE
+            binding.cardUserAvatarHome.visibility = View.VISIBLE
+            binding.tvUserAvatarHome.text = user.avatarInitials
+            if (user.avatarUri.isNotEmpty() && File(user.avatarUri).exists()) {
+                binding.ivUserAvatarHome.visibility = View.VISIBLE
+                Glide.with(this)
+                    .load(File(user.avatarUri))
+                    .skipMemoryCache(true)
+                    .circleCrop()
+                    .into(binding.ivUserAvatarHome)
+            } else {
+                binding.ivUserAvatarHome.visibility = View.GONE
+            }
+            binding.tvWelcomeUser.text = "Welcome back, ${user.name}"
+            binding.tvWelcomeSubtitle.text = "📍 $city • ${user.points} Poin • ${user.moviesCount} Tiket"
         } else {
-            binding.tvWelcomeUser.text = "Welcome back"
+            binding.btnLoginTopHome.visibility = View.VISIBLE
+            binding.cardUserAvatarHome.visibility = View.GONE
+            binding.tvWelcomeUser.text = "Cinema Booking"
+            binding.tvWelcomeSubtitle.text = "Masuk untuk simpan tiket & kumpulkan poin"
         }
     }
 
@@ -133,7 +160,7 @@ class HomeFragment : Fragment() {
                 viewType = MovieViewType.NOW_SHOWING_CAROUSEL,
                 onMovieClick = { movie -> openMovieDetail(movie) },
                 onBookClick = { movie -> openMovieDetail(movie) },
-                onSeeMoreClick = { AllMoviesActivity.open(requireContext(), Category.NOW_PLAYING) }
+                infiniteLoop = true
             )
             if (!nowSnapAttached) {
                 nowSnapAttached = true
@@ -151,7 +178,15 @@ class HomeFragment : Fragment() {
                 })
             }
         }
+        centerInfiniteCarousel(movies.size)
         updateActiveMovieText(movies.firstOrNull())
+    }
+
+    private fun centerInfiniteCarousel(size: Int) {
+        if (size <= 1) return
+        val mid = Int.MAX_VALUE / 2
+        val startPos = mid - (mid % size)
+        binding.rvNowShowing.scrollToPosition(startPos)
     }
 
     private fun updateActiveCarouselTitle() {
@@ -163,9 +198,6 @@ class HomeFragment : Fragment() {
         val movie = adapter.getItemAt(pos)
         if (movie != null) {
             updateActiveMovieText(movie)
-        } else {
-            binding.tvActiveNowTitle.text = "LIHAT SEMUA FILM"
-            binding.tvActiveNowDesc.text = "Ketuk tombol '>' untuk melihat katalog film selengkapnya"
         }
     }
 
@@ -216,8 +248,21 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupListeners() {
+        binding.btnLoginTopHome.setOnClickListener {
+            LoginBottomSheet {
+                setupGreeting()
+            }.show(parentFragmentManager, LoginBottomSheet.TAG)
+        }
+
+        binding.cardUserAvatarHome.setOnClickListener {
+            (activity as? MainActivity)?.selectTab(3)
+        }
+
         binding.layoutCitySelectorHome.setOnClickListener {
-            CityPickerDialog { updateCityDisplay() }.show(parentFragmentManager, CityPickerDialog.TAG)
+            CityPickerDialog {
+                updateCityDisplay()
+                setupGreeting()
+            }.show(parentFragmentManager, CityPickerDialog.TAG)
         }
 
         val chips = listOf(
@@ -230,13 +275,12 @@ class HomeFragment : Fragment() {
         chips.forEach { (chipView, filterKey) ->
             chipView.setOnClickListener {
                 if (filterKey == "WATCHLIST" && repository.getSavedMovies().isEmpty()) {
-                    Toast.makeText(requireContext(), "Watchlist kamu masih kosong", Toast.LENGTH_SHORT).show()
+                    AppToast.show(requireContext(), "Watchlist kamu masih kosong")
                     return@setOnClickListener
                 }
                 nowShowingFilter = filterKey
                 updateNowShowingChips(chips.map { it.first }, chipView)
                 setupNowShowingCarousel()
-                binding.rvNowShowing.scrollToPosition(0)
             }
         }
 
@@ -276,6 +320,7 @@ class HomeFragment : Fragment() {
         super.onDestroyView()
         MovieRepository.removeOnMoviesUpdatedListener(onMoviesUpdatedListener)
         MovieRepository.removeOnCityChangedListener(onCityChangedListener)
+        MovieRepository.removeOnProfileChangedListener(onProfileChangedListener)
         _binding = null
     }
 }

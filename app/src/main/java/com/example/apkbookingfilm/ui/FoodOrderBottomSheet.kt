@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.apkbookingfilm.R
 import com.example.apkbookingfilm.adapter.FoodAdapter
@@ -13,6 +12,7 @@ import com.example.apkbookingfilm.adapter.FoodViewType
 import com.example.apkbookingfilm.data.MovieRepository
 import com.example.apkbookingfilm.databinding.DialogFoodMenuBinding
 import com.example.apkbookingfilm.model.FoodOrderItem
+import com.example.apkbookingfilm.util.AppToast
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
 class FoodOrderBottomSheet(
@@ -61,11 +61,10 @@ class FoodOrderBottomSheet(
             onCartUpdated?.invoke()
             val count = repository.getFoodCartCount()
             if (count > 0) {
-                Toast.makeText(
+                AppToast.show(
                     requireContext(),
-                    "$count item camilan disimpan — akan ikut saat pilih kursi!",
-                    Toast.LENGTH_SHORT
-                ).show()
+                    "$count item camilan disimpan — ikut saat pilih kursi!"
+                )
             }
             dismiss()
         }
@@ -73,7 +72,7 @@ class FoodOrderBottomSheet(
         binding.btnCheckoutFoodOnly.setOnClickListener {
             val orders = repository.getFoodCartOrders()
             if (orders.isEmpty()) {
-                Toast.makeText(requireContext(), "Pilih minimal 1 makanan atau minuman", Toast.LENGTH_SHORT).show()
+                AppToast.show(requireContext(), "Pilih minimal 1 makanan atau minuman")
                 return@setOnClickListener
             }
             val cinema = repository.getCinemasForCity().firstOrNull() ?: repository.cinemas.first()
