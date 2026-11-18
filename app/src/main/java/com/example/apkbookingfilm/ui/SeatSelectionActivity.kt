@@ -23,6 +23,8 @@ import com.example.apkbookingfilm.model.FoodOrderItem
 import com.example.apkbookingfilm.model.Movie
 import com.example.apkbookingfilm.model.Seat
 import com.example.apkbookingfilm.model.SeatStatus
+import com.example.apkbookingfilm.util.AppLanguage
+import com.example.apkbookingfilm.util.AppToast
 
 class SeatSelectionActivity : AppCompatActivity() {
 
@@ -145,7 +147,7 @@ class SeatSelectionActivity : AppCompatActivity() {
 
         binding.tvSeatTotalPrice.text = "${MovieRepository.formatRupiah(grandTotal)} total"
         binding.tvFoodAddonTotal.text = MovieRepository.formatRupiah(foodTotal)
-        binding.tvSeatsCountDesc.text = "$count of 8 seats • Standard"
+        binding.tvSeatsCountDesc.text = AppLanguage.tr("$count of 8 seats • Standard", "$count dari 8 kursi • Standar")
 
         val chipsContainer = binding.layoutSelectedChips
         chipsContainer.removeAllViews()
@@ -153,9 +155,9 @@ class SeatSelectionActivity : AppCompatActivity() {
         if (selectedSeatNames.isNotEmpty()) {
             binding.tvNoSeatsHint.visibility = View.GONE
             binding.scrollSelectedChips.visibility = View.VISIBLE
-            binding.tvBottomSeatsLabel.text = "Seats " + selectedSeatNames.joinToString(", ")
+            binding.tvBottomSeatsLabel.text = "${AppLanguage.tr("Seats", "Kursi")} " + selectedSeatNames.joinToString(", ")
             val foodLabel = if (foodCount > 0) " + $foodCount snack" else ""
-            binding.tvBottomSeatsDetails.text = "$count tiket$foodLabel • $time"
+            binding.tvBottomSeatsDetails.text = "$count ${AppLanguage.tr("tickets", "tiket")}$foodLabel • $time"
             binding.btnContinueToPayment.isEnabled = true
 
             val inflater = LayoutInflater.from(this)
@@ -170,8 +172,12 @@ class SeatSelectionActivity : AppCompatActivity() {
         } else {
             binding.tvNoSeatsHint.visibility = View.VISIBLE
             binding.scrollSelectedChips.visibility = View.GONE
-            binding.tvBottomSeatsLabel.text = "Belum ada kursi dipilih"
-            binding.tvBottomSeatsDetails.text = if (foodCount > 0) "$foodCount camilan dipilih • pilih kursi dulu" else "Ketuk kursi tersedia di atas"
+            binding.tvBottomSeatsLabel.text = AppLanguage.tr("No seats selected", "Belum ada kursi dipilih")
+            binding.tvBottomSeatsDetails.text = if (foodCount > 0) {
+                AppLanguage.tr("$foodCount snacks selected • choose seats first", "$foodCount camilan dipilih • pilih kursi dulu")
+            } else {
+                AppLanguage.tr("Tap available seats above", "Ketuk kursi tersedia di atas")
+            }
             binding.btnContinueToPayment.isEnabled = false
         }
     }
@@ -192,28 +198,51 @@ class SeatSelectionActivity : AppCompatActivity() {
         }
 
         binding.btnBookmarkSeats.setOnClickListener {
-            com.example.apkbookingfilm.util.AppToast.show(this, "Jadwal disimpan")
+            AppToast.show(this, AppLanguage.tr("Schedule saved", "Jadwal disimpan"))
         }
 
         binding.btnContinueToPayment.setOnClickListener {
             if (selectedSeatNames.isEmpty()) {
-                com.example.apkbookingfilm.util.AppToast.show(this, "Silakan pilih minimal 1 kursi")
+                AppToast.show(this, AppLanguage.tr("Please select at least 1 seat", "Silakan pilih minimal 1 kursi"))
                 return@setOnClickListener
             }
 
             val currentMovie = movie ?: return@setOnClickListener
             val currentCinema = cinema ?: return@setOnClickListener
-            val foodOrders = ArrayList<FoodOrderItem>(repository.getFoodCartOrders())
-
-            val intent = Intent(this, PaymentActivity::class.java).apply {
-                putExtra(PaymentActivity.EXTRA_MOVIE, currentMovie)
-                putExtra(PaymentActivity.EXTRA_CINEMA, currentCinema)
-                putExtra(PaymentActivity.EXTRA_DATE, date)
-                putExtra(PaymentActivity.EXTRA_TIME, time)
-                putStringArrayListExtra(PaymentActivity.EXTRA_SEATS, ArrayList(selectedSeatNames))
-                putExtra(PaymentActivity.EXTRA_FOOD_ITEMS, foodOrders)
+            val proceedPayment = {
+                val foodOrders = ArrayList<FoodOrderItem>(repository.getFoodCartOrders())
+                val intent = Intent(this, PaymentActivity::class.java).apply {
+                    putExtra(PaymentActivity.EXTRA_MOVIE, currentMovie)
+                    putExtra(PaymentActivity.EXTRA_CINEMA, currentCinema)
+                    putExtra(PaymentActivity.EXTRA_DATE, date)
+                    putExtra(PaymentActivity.EXTRA_TIME, time)
+                    putStringArrayListExtra(PaymentActivity.EXTRA_SEATS, ArrayList(selectedSeatNames))
+                    putExtra(PaymentActivity.EXTRA_FOOD_ITEMS, foodOrders)
+                }
+                startActivity(intent)
             }
-            startActivity(intent)
+
+            if (!repository.isLoggedIn()) {
+                AppToast.show(
+                    this,
+                    AppLanguage.tr("Please sign in first to continue payment", "Silakan login terlebih dahulu untuk melanjutkan pembayaran")
+                )
+                LoginBottomSheet(
+                    onLoginSuccess = { proceedPayment() },
+                    onSwitchToRegister = {
+                        CreateAccountBottomSheet(
+                            onRegisterSuccess = { proceedPayment() },
+                            onSwitchToLogin = {
+                                LoginBottomSheet(onLoginSuccess = { proceedPayment() })
+                                    .show(supportFragmentManager, LoginBottomSheet.TAG)
+                            }
+                        ).show(supportFragmentManager, CreateAccountBottomSheet.TAG)
+                    }
+                ).show(supportFragmentManager, LoginBottomSheet.TAG)
+                return@setOnClickListener
+            }
+
+            proceedPayment()
         }
     }
 

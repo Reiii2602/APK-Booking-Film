@@ -147,6 +147,7 @@
                         android:orientation="horizontal">
 
                         <TextView
+                            android:id="@+id/tvLabelOrderMovie"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
@@ -172,6 +173,7 @@
                         android:orientation="horizontal">
 
                         <TextView
+                            android:id="@+id/tvLabelOrderShowtime"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
@@ -197,6 +199,7 @@
                         android:orientation="horizontal">
 
                         <TextView
+                            android:id="@+id/tvLabelOrderCinema"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
@@ -223,6 +226,7 @@
                         android:orientation="horizontal">
 
                         <TextView
+                            android:id="@+id/tvLabelOrderSeats"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
@@ -250,6 +254,7 @@
                         android:visibility="gone">
 
                         <TextView
+                            android:id="@+id/tvLabelOrderFood"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"

@@ -30,6 +30,7 @@ import com.example.apkbookingfilm.databinding.ItemShowtimeCinemaBinding
 import com.example.apkbookingfilm.databinding.ItemShowtimeSlotBinding
 import com.example.apkbookingfilm.model.Cinema
 import com.example.apkbookingfilm.model.Movie
+import com.example.apkbookingfilm.util.AppLanguage
 import com.example.apkbookingfilm.util.AppToast
 import com.example.apkbookingfilm.util.TmdbImageLoader
 import com.google.android.material.card.MaterialCardView
@@ -101,7 +102,9 @@ class MovieDetailActivity : AppCompatActivity() {
             if (currentMovie?.cast.isNullOrEmpty()) {
                 binding.tvCastEmpty.visibility = View.VISIBLE
                 binding.tvCastEmpty.text = if (detail?.hasFullDetail == true)
-                    "Data pemeran tidak tersedia." else "Gagal memuat pemeran. Periksa koneksi internet."
+                    AppLanguage.tr("Cast data not available.", "Data pemeran tidak tersedia.")
+                else
+                    AppLanguage.tr("Failed to load cast. Check your internet connection.", "Gagal memuat pemeran. Periksa koneksi internet.")
             }
         }
     }
@@ -119,10 +122,18 @@ class MovieDetailActivity : AppCompatActivity() {
         binding.tvRatingScore.text = "${movie.rating} / 10$votes"
         binding.tvSynopsis.text = movie.synopsis
         binding.tvDirector.text = "DIRECTOR: ${movie.director.ifEmpty { "-" }}"
-        binding.tvStatusLabel.text = if (movie.isComingSoon) "COMING SOON" else "NOW SHOWING"
+        binding.tvStatusLabel.text = if (movie.isComingSoon) {
+            AppLanguage.tr("COMING SOON", "SEGERA TAYANG")
+        } else {
+            AppLanguage.tr("NOW SHOWING", "SEDANG TAYANG")
+        }
         binding.tvTagline.visibility = if (movie.tagline.isNotEmpty()) View.VISIBLE else View.GONE
         binding.tvTagline.text = "\u201C${movie.tagline}\u201D"
-        binding.tvTrailerLabel.text = if (movie.trailerKey.isNotEmpty()) "PUTAR CUPLIKAN" else "CUPLIKAN"
+        binding.tvTrailerLabel.text = if (movie.trailerKey.isNotEmpty()) {
+            AppLanguage.tr("PLAY TRAILER", "PUTAR CUPLIKAN")
+        } else {
+            AppLanguage.tr("TRAILER", "CUPLIKAN")
+        }
 
         if (movie.cast.isNotEmpty()) {
             binding.tvCastEmpty.visibility = View.GONE
@@ -277,7 +288,7 @@ class MovieDetailActivity : AppCompatActivity() {
         val fmt = cinema.formats.firstOrNull() ?: "2D"
         binding.tvBottomShowtimeDate.text = "$selectedDate • $selectedTime"
         binding.tvBottomShowtimeVenue.text = "${cinema.name} • $fmt"
-        binding.tvBottomPrice.text = "${MovieRepository.formatRupiah(cinema.ticketPrice)}/adult"
+        binding.tvBottomPrice.text = "${MovieRepository.formatRupiah(cinema.ticketPrice)}/${AppLanguage.tr("adult", "dewasa")}"
     }
 
     private fun setupListeners() {
@@ -293,17 +304,17 @@ class MovieDetailActivity : AppCompatActivity() {
 
         binding.tvFormatFilterDetail.setOnClickListener {
             val formats = listOf(
-                "All formats" to "Semua studio bioskop",
-                "IMAX" to "Layar ekstra lebar & suara imersif",
-                "PREMIERE" to "Kursi recliner VIP & selimut",
-                "DOLBY ATMOS" to "Audio spasial 360 derajat",
-                "4DX" to "Kursi gerak & efek lingkungan",
-                "REGULAR" to "Studio 2D standar"
+                "All formats" to AppLanguage.tr("All studio types", "Semua studio bioskop"),
+                "IMAX" to AppLanguage.tr("Extra wide screen & immersive sound", "Layar ekstra lebar & suara imersif"),
+                "PREMIERE" to AppLanguage.tr("VIP recliner seats & blanket", "Kursi recliner VIP & selimut"),
+                "DOLBY ATMOS" to AppLanguage.tr("360-degree spatial audio", "Audio spasial 360 derajat"),
+                "4DX" to AppLanguage.tr("Motion seats & environmental effects", "Kursi gerak & efek lingkungan"),
+                "REGULAR" to AppLanguage.tr("Standard 2D studio", "Studio 2D standar")
             )
             val checked = formats.indexOfFirst { it.first == selectedFormatFilter }.coerceAtLeast(0)
             ThemedOptionsBottomSheet(
-                title = "Pilih Format Studio",
-                subtitle = "Filter jadwal tayang berdasarkan tipe studio",
+                title = AppLanguage.tr("Choose Studio Format", "Pilih Format Studio"),
+                subtitle = AppLanguage.tr("Filter showtimes by studio type", "Filter jadwal tayang berdasarkan tipe studio"),
                 options = formats,
                 selectedIndex = checked
             ) { which ->
@@ -315,7 +326,7 @@ class MovieDetailActivity : AppCompatActivity() {
         binding.btnTrailer.setOnClickListener {
             val key = currentMovie?.trailerKey.orEmpty()
             if (key.isEmpty()) {
-                AppToast.show(this, "Cuplikan trailer belum tersedia untuk film ini")
+                AppToast.show(this, AppLanguage.tr("Trailer is not available for this movie yet", "Cuplikan trailer belum tersedia untuk film ini"))
                 return@setOnClickListener
             }
             showAndPlayInlineTrailer(key)
@@ -351,20 +362,46 @@ class MovieDetailActivity : AppCompatActivity() {
             val movie = currentMovie ?: return@setOnClickListener
             val isNowSaved = repository.toggleSaved(movie.id)
             updateBookmarkIcon()
-            val msg = if (isNowSaved) "Ditambahkan ke film tersimpan" else "Dihapus dari film tersimpan"
+            val msg = if (isNowSaved) {
+                AppLanguage.tr("Added to saved films", "Ditambahkan ke film tersimpan")
+            } else {
+                AppLanguage.tr("Removed from saved films", "Dihapus dari film tersimpan")
+            }
             AppToast.show(this, msg)
         }
 
         binding.btnChooseSeats.setOnClickListener {
             val movie = currentMovie ?: return@setOnClickListener
             val cinema = selectedCinema ?: repository.cinemas[0]
-            val intent = Intent(this, SeatSelectionActivity::class.java).apply {
-                putExtra(SeatSelectionActivity.EXTRA_MOVIE, movie)
-                putExtra(SeatSelectionActivity.EXTRA_CINEMA, cinema)
-                putExtra(SeatSelectionActivity.EXTRA_DATE, selectedDate)
-                putExtra(SeatSelectionActivity.EXTRA_TIME, selectedTime.ifEmpty { "19:30" })
+            val launchSeatSelection = {
+                val intent = Intent(this, SeatSelectionActivity::class.java).apply {
+                    putExtra(SeatSelectionActivity.EXTRA_MOVIE, movie)
+                    putExtra(SeatSelectionActivity.EXTRA_CINEMA, cinema)
+                    putExtra(SeatSelectionActivity.EXTRA_DATE, selectedDate)
+                    putExtra(SeatSelectionActivity.EXTRA_TIME, selectedTime.ifEmpty { "19:30" })
+                }
+                startActivity(intent)
             }
-            startActivity(intent)
+            if (!repository.isLoggedIn()) {
+                AppToast.show(
+                    this,
+                    AppLanguage.tr("Please sign in first to choose seats", "Silakan login terlebih dahulu untuk memilih kursi")
+                )
+                LoginBottomSheet(
+                    onLoginSuccess = { launchSeatSelection() },
+                    onSwitchToRegister = {
+                        CreateAccountBottomSheet(
+                            onRegisterSuccess = { launchSeatSelection() },
+                            onSwitchToLogin = {
+                                LoginBottomSheet(onLoginSuccess = { launchSeatSelection() })
+                                    .show(supportFragmentManager, LoginBottomSheet.TAG)
+                            }
+                        ).show(supportFragmentManager, CreateAccountBottomSheet.TAG)
+                    }
+                ).show(supportFragmentManager, LoginBottomSheet.TAG)
+                return@setOnClickListener
+            }
+            launchSeatSelection()
         }
     }
 

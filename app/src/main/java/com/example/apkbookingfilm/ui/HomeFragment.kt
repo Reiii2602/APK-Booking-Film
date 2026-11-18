@@ -21,6 +21,7 @@ import com.example.apkbookingfilm.data.MovieRepository
 import com.example.apkbookingfilm.data.TmdbApi.Category
 import com.example.apkbookingfilm.databinding.FragmentHomeBinding
 import com.example.apkbookingfilm.model.Movie
+import com.example.apkbookingfilm.util.AppLanguage
 import com.example.apkbookingfilm.util.AppToast
 import com.example.apkbookingfilm.util.TmdbImageLoader
 import java.io.File
@@ -54,6 +55,21 @@ class HomeFragment : Fragment() {
         }
     }
 
+    private val onLanguageChangedListener = {
+        if (_binding != null) {
+            updateLanguageSwitchUI()
+            setupGreeting()
+            updateCityDisplay()
+            updateActiveCarouselTitle()
+            binding.rvNowShowing.adapter?.notifyDataSetChanged()
+            binding.rvCinemaFood.adapter?.notifyDataSetChanged()
+            binding.rvComingSoon.adapter?.notifyDataSetChanged()
+            binding.rvPopular.adapter?.notifyDataSetChanged()
+            binding.rvTopRated.adapter?.notifyDataSetChanged()
+            AppLanguage.applyToView(requireActivity().window?.decorView)
+        }
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -69,26 +85,42 @@ class HomeFragment : Fragment() {
         MovieRepository.addOnMoviesUpdatedListener(onMoviesUpdatedListener)
         MovieRepository.addOnCityChangedListener(onCityChangedListener)
         MovieRepository.addOnProfileChangedListener(onProfileChangedListener)
+        AppLanguage.addListener(onLanguageChangedListener)
 
+        updateLanguageSwitchUI()
         setupGreeting()
         updateCityDisplay()
         setupFoodSection()
         refreshAll()
         setupListeners()
+        AppLanguage.applyToView(binding.root)
     }
 
     override fun onResume() {
         super.onResume()
+        updateLanguageSwitchUI()
         setupGreeting()
         updateCityDisplay()
+        AppLanguage.applyToView(binding.root)
+    }
+
+    private fun updateLanguageSwitchUI() {
+        val isId = AppLanguage.isId()
+        binding.tvLangId.setBackgroundResource(if (isId) R.drawable.bg_chip_selected else 0)
+        binding.tvLangId.setTextColor(requireContext().getColor(if (isId) R.color.white else R.color.chip_text))
+        binding.tvLangEng.setBackgroundResource(if (!isId) R.drawable.bg_chip_selected else 0)
+        binding.tvLangEng.setTextColor(requireContext().getColor(if (!isId) R.color.white else R.color.chip_text))
     }
 
     private fun updateCityDisplay() {
         val city = repository.getSelectedCity()
         val cinemas = repository.getCinemasForCity(city)
         binding.tvCityHome.text = city.uppercase()
-        binding.tvCityCinemaCountHome.text = "${cinemas.size} Bioskop"
-        binding.tvTheaterShortcutTitle.text = "Explore ${cinemas.size} Bioskop di $city"
+        binding.tvCityCinemaCountHome.text = "${cinemas.size} ${AppLanguage.tr("Cinemas", "Bioskop")}"
+        binding.tvTheaterShortcutTitle.text = AppLanguage.tr(
+            "Explore ${cinemas.size} Cinemas in $city",
+            "Explore ${cinemas.size} Bioskop di $city"
+        )
         binding.tvTheaterShortcutSub.text = cinemas.take(3).joinToString(", ") { it.name }
     }
 
@@ -102,7 +134,6 @@ class HomeFragment : Fragment() {
 
     private fun setupGreeting() {
         val user = repository.getUser()
-        val city = repository.getSelectedCity()
         if (user.isLoggedIn) {
             binding.btnLoginTopHome.visibility = View.GONE
             binding.cardUserAvatarHome.visibility = View.VISIBLE
@@ -117,13 +148,19 @@ class HomeFragment : Fragment() {
             } else {
                 binding.ivUserAvatarHome.visibility = View.GONE
             }
-            binding.tvWelcomeUser.text = "Welcome back, ${user.name}"
-            binding.tvWelcomeSubtitle.text = "Book your favorite movies & snacks today"
+            binding.tvWelcomeUser.text = AppLanguage.tr("Welcome back, ${user.name}", "Selamat datang, ${user.name}")
+            binding.tvWelcomeSubtitle.text = AppLanguage.tr(
+                "Book your favorite movies & snacks today",
+                "Pesan film & camilan favoritmu hari ini"
+            )
         } else {
             binding.btnLoginTopHome.visibility = View.VISIBLE
             binding.cardUserAvatarHome.visibility = View.GONE
             binding.tvWelcomeUser.text = "Cinema Booking"
-            binding.tvWelcomeSubtitle.text = "Masuk untuk simpan tiket & kumpulkan poin"
+            binding.tvWelcomeSubtitle.text = AppLanguage.tr(
+                "Sign in to save tickets & earn points",
+                "Masuk untuk simpan tiket & kumpulkan poin"
+            )
         }
     }
 
@@ -136,7 +173,12 @@ class HomeFragment : Fragment() {
             .filter { it.isNotEmpty() }.joinToString(" • ")
 
         binding.cardHighlight.setOnClickListener { openMovieDetail(highlightMovie) }
-        binding.btnHighlightChooseSeats.setOnClickListener { openMovieDetail(highlightMovie) }
+        binding.btnHighlightChooseSeats.setOnClickListener {
+            requireLoginThen(
+                "Please sign in first to book tickets & choose seats",
+                "Silakan login terlebih dahulu untuk memesan tiket & memilih kursi"
+            ) { openMovieDetail(highlightMovie) }
+        }
     }
 
     private fun setupNowShowingCarousel() {
@@ -159,7 +201,12 @@ class HomeFragment : Fragment() {
                 movies = movies,
                 viewType = MovieViewType.NOW_SHOWING_CAROUSEL,
                 onMovieClick = { movie -> openMovieDetail(movie) },
-                onBookClick = { movie -> openMovieDetail(movie) },
+                onBookClick = { movie ->
+                    requireLoginThen(
+                        "Please sign in first to book tickets & choose seats",
+                        "Silakan login terlebih dahulu untuk memesan tiket & memilih kursi"
+                    ) { openMovieDetail(movie) }
+                },
                 infiniteLoop = true
             )
             if (!nowSnapAttached) {
@@ -204,7 +251,8 @@ class HomeFragment : Fragment() {
     private fun updateActiveMovieText(movie: Movie?) {
         if (_binding == null || movie == null) return
         binding.tvActiveNowTitle.text = movie.title
-        binding.tvActiveNowDesc.text = "${movie.genre} • ★ ${movie.rating} • Ketuk BELI TIKET untuk pilih kursi!"
+        binding.tvActiveNowDesc.text = "${movie.genre} • ★ ${movie.rating} • " +
+            AppLanguage.tr("Tap BUY TICKET to choose your seats!", "Ketuk BELI TIKET untuk pilih kursi!")
     }
 
     private fun setupFoodSection() {
@@ -219,8 +267,39 @@ class HomeFragment : Fragment() {
         )
     }
 
+    private fun requireLoginThen(reasonEn: String, reasonId: String, action: () -> Unit) {
+        if (repository.isLoggedIn()) {
+            action()
+            return
+        }
+        AppToast.show(requireContext(), AppLanguage.tr(reasonEn, reasonId))
+        val showRegister: () -> Unit = {
+            CreateAccountBottomSheet(
+                onRegisterSuccess = {
+                    if (_binding != null) setupGreeting()
+                    action()
+                },
+                onSwitchToLogin = {
+                    requireLoginThen(reasonEn, reasonId, action)
+                }
+            ).show(parentFragmentManager, CreateAccountBottomSheet.TAG)
+        }
+        LoginBottomSheet(
+            onLoginSuccess = {
+                if (_binding != null) setupGreeting()
+                action()
+            },
+            onSwitchToRegister = showRegister
+        ).show(parentFragmentManager, LoginBottomSheet.TAG)
+    }
+
     private fun openFoodMenu(preselectId: String?) {
-        FoodOrderBottomSheet(preselectFoodId = preselectId).show(parentFragmentManager, FoodOrderBottomSheet.TAG)
+        requireLoginThen(
+            "Please sign in first to order food & drinks",
+            "Silakan login terlebih dahulu untuk memesan makanan & minuman"
+        ) {
+            FoodOrderBottomSheet(preselectFoodId = preselectId).show(parentFragmentManager, FoodOrderBottomSheet.TAG)
+        }
     }
 
     private fun setupRow(recyclerView: RecyclerView, category: Category) {
@@ -248,6 +327,16 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupListeners() {
+        binding.tvLangId.setOnClickListener {
+            AppLanguage.setLanguage(requireContext(), AppLanguage.LANG_ID)
+            AppToast.show(requireContext(), "Bahasa Indonesia (ID) aktif")
+        }
+
+        binding.tvLangEng.setOnClickListener {
+            AppLanguage.setLanguage(requireContext(), AppLanguage.LANG_ENG)
+            AppToast.show(requireContext(), "English (ENG) language active")
+        }
+
         binding.btnLoginTopHome.setOnClickListener {
             val showRegister: () -> Unit = {
                 CreateAccountBottomSheet(
@@ -284,7 +373,7 @@ class HomeFragment : Fragment() {
         chips.forEach { (chipView, filterKey) ->
             chipView.setOnClickListener {
                 if (filterKey == "WATCHLIST" && repository.getSavedMovies().isEmpty()) {
-                    AppToast.show(requireContext(), "Watchlist kamu masih kosong")
+                    AppToast.show(requireContext(), AppLanguage.tr("Your watchlist is empty", "Watchlist kamu masih kosong"))
                     return@setOnClickListener
                 }
                 nowShowingFilter = filterKey
@@ -330,6 +419,7 @@ class HomeFragment : Fragment() {
         MovieRepository.removeOnMoviesUpdatedListener(onMoviesUpdatedListener)
         MovieRepository.removeOnCityChangedListener(onCityChangedListener)
         MovieRepository.removeOnProfileChangedListener(onProfileChangedListener)
+        AppLanguage.removeListener(onLanguageChangedListener)
         _binding = null
     }
 }

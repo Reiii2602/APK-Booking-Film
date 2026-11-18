@@ -9,6 +9,7 @@ import com.example.apkbookingfilm.databinding.ItemMovieNowShowingBinding
 import com.example.apkbookingfilm.databinding.ItemMovieSavedBinding
 import com.example.apkbookingfilm.databinding.ItemSeeMoreArrowBinding
 import com.example.apkbookingfilm.model.Movie
+import com.example.apkbookingfilm.util.AppLanguage
 import com.example.apkbookingfilm.util.TmdbImageLoader
 
 enum class MovieViewType {
@@ -91,6 +92,7 @@ class MovieAdapter(
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (holder is SeeMoreViewHolder) {
             holder.bind()
+            AppLanguage.applyToView(holder.itemView)
             return
         }
         val movie = getItemAt(position) ?: return
@@ -100,6 +102,7 @@ class MovieAdapter(
             is MovieSavedViewHolder -> holder.bind(movie)
             is MovieGridViewHolder -> holder.bind(movie)
         }
+        AppLanguage.applyToView(holder.itemView)
     }
 
     inner class SeeMoreViewHolder(private val binding: ItemSeeMoreArrowBinding) :
@@ -114,7 +117,11 @@ class MovieAdapter(
         fun bind(movie: Movie) {
             TmdbImageLoader.loadPoster(binding.ivPosterNow, movie)
             binding.tvRatingNow.text = movie.rating
-            binding.tvBadgeNow.text = if (movie.isComingSoon) "PRE-SALE" else "SEDANG TAYANG"
+            binding.tvBadgeNow.text = if (movie.isComingSoon) {
+                AppLanguage.tr("PRE-SALE", "PRE-SALE")
+            } else {
+                AppLanguage.tr("NOW SHOWING", "SEDANG TAYANG")
+            }
             binding.root.setOnClickListener { onMovieClick(movie) }
             binding.btnBuyTicketNow.setOnClickListener {
                 onBookClick?.invoke(movie) ?: onMovieClick(movie)
@@ -130,7 +137,7 @@ class MovieAdapter(
             binding.tvTitle.text = movie.title
             binding.tvGenre.text = movie.genre
             binding.tvDuration.text = if (movie.isComingSoon && movie.releaseDate.isNotEmpty())
-                "Rilis: ${movie.releaseDate}" else movie.duration
+                AppLanguage.tr("Release: ${movie.releaseDate}", "Rilis: ${movie.releaseDate}") else movie.duration
             binding.tvRating.text = movie.rating
             binding.root.setOnClickListener { onMovieClick(movie) }
         }

@@ -31,6 +31,8 @@ import com.example.apkbookingfilm.adapter.CinemaAdapter
 import com.example.apkbookingfilm.data.MovieRepository
 import com.example.apkbookingfilm.databinding.FragmentTheatersBinding
 import com.example.apkbookingfilm.model.Cinema
+import com.example.apkbookingfilm.util.AppLanguage
+import com.example.apkbookingfilm.util.AppToast
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 class TheatersFragment : Fragment() {
@@ -90,7 +92,10 @@ class TheatersFragment : Fragment() {
         val cityCinemas = repository.getCinemasForCity(city)
 
         binding.tvCityTheaters.text = city
-        binding.tvTheatersNearHeader.text = "${cityCinemas.size} Bioskop di $city"
+        binding.tvTheatersNearHeader.text = AppLanguage.tr(
+            "${cityCinemas.size} Cinemas in $city",
+            "${cityCinemas.size} Bioskop di $city"
+        )
 
         val filtered = cityCinemas.filter { c ->
             val matchQuery = query.isEmpty() ||
@@ -105,12 +110,34 @@ class TheatersFragment : Fragment() {
             matchQuery && matchFormat
         }
 
-        binding.rvTheaters.adapter = CinemaAdapter(filtered) { cinema, _ ->
+        binding.rvTheaters.adapter = CinemaAdapter(filtered) { _, _ ->
             val firstMovie = repository.movies.firstOrNull()
-            val intent = Intent(requireContext(), MovieDetailActivity::class.java).apply {
-                putExtra(MovieDetailActivity.EXTRA_MOVIE_ID, firstMovie?.id ?: "dune-2")
+            val openDetail = {
+                val intent = Intent(requireContext(), MovieDetailActivity::class.java).apply {
+                    putExtra(MovieDetailActivity.EXTRA_MOVIE_ID, firstMovie?.id ?: "dune-2")
+                }
+                startActivity(intent)
             }
-            startActivity(intent)
+            if (!repository.isLoggedIn()) {
+                AppToast.show(
+                    requireContext(),
+                    AppLanguage.tr("Please sign in first to book tickets & choose seats", "Silakan login terlebih dahulu untuk memesan tiket & memilih kursi")
+                )
+                LoginBottomSheet(
+                    onLoginSuccess = { openDetail() },
+                    onSwitchToRegister = {
+                        CreateAccountBottomSheet(
+                            onRegisterSuccess = { openDetail() },
+                            onSwitchToLogin = {
+                                LoginBottomSheet(onLoginSuccess = { openDetail() })
+                                    .show(parentFragmentManager, LoginBottomSheet.TAG)
+                            }
+                        ).show(parentFragmentManager, CreateAccountBottomSheet.TAG)
+                    }
+                ).show(parentFragmentManager, LoginBottomSheet.TAG)
+                return@CinemaAdapter
+            }
+            openDetail()
         }
 
         renderMapMarkers(binding.webTheaterMap, city, cityCinemas)
@@ -171,7 +198,7 @@ class TheatersFragment : Fragment() {
             </head>
             <body>
               <canvas id="c"></canvas>
-              <div id="cityBadge">$safeCity • ${cinemas.size} Bioskop</div>
+              <div id="cityBadge">$safeCity • ${cinemas.size} ${AppLanguage.tr("Cinemas", "Bioskop")}</div>
               <div id="pinPopup"></div>
               <div id="zoomBox">
                 <div class="zbtn" onclick="changeZoom(1.25)" title="Perbesar">

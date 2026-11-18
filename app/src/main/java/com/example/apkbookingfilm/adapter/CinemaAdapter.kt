@@ -5,6 +5,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.example.apkbookingfilm.databinding.ItemTheaterBinding
 import com.example.apkbookingfilm.model.Cinema
+import com.example.apkbookingfilm.util.AppLanguage
 
 class CinemaAdapter(
     private val cinemas: List<Cinema>,
@@ -18,6 +19,7 @@ class CinemaAdapter(
 
     override fun onBindViewHolder(holder: CinemaViewHolder, position: Int) {
         holder.bind(cinemas[position])
+        AppLanguage.applyToView(holder.itemView)
     }
 
     override fun getItemCount(): Int = cinemas.size

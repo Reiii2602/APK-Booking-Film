@@ -14,6 +14,8 @@ import com.example.apkbookingfilm.adapter.MovieViewType
 import com.example.apkbookingfilm.data.MovieRepository
 import com.example.apkbookingfilm.databinding.FragmentSavedBinding
 import com.example.apkbookingfilm.model.Movie
+import com.example.apkbookingfilm.util.AppLanguage
+import com.example.apkbookingfilm.util.AppToast
 
 class SavedFragment : Fragment() {
 
@@ -64,10 +66,31 @@ class SavedFragment : Fragment() {
                 movies = savedMovies,
                 viewType = MovieViewType.SAVED_VERTICAL,
                 onMovieClick = { movie -> openMovieDetail(movie) },
-                onBookClick = { movie -> openMovieDetail(movie) },
+                onBookClick = { movie ->
+                    if (!repository.isLoggedIn()) {
+                        AppToast.show(
+                            requireContext(),
+                            AppLanguage.tr("Please sign in first to book tickets & choose seats", "Silakan login terlebih dahulu untuk memesan tiket & memilih kursi")
+                        )
+                        LoginBottomSheet(
+                            onLoginSuccess = { openMovieDetail(movie) },
+                            onSwitchToRegister = {
+                                CreateAccountBottomSheet(
+                                    onRegisterSuccess = { openMovieDetail(movie) },
+                                    onSwitchToLogin = {
+                                        LoginBottomSheet(onLoginSuccess = { openMovieDetail(movie) })
+                                            .show(parentFragmentManager, LoginBottomSheet.TAG)
+                                    }
+                                ).show(parentFragmentManager, CreateAccountBottomSheet.TAG)
+                            }
+                        ).show(parentFragmentManager, LoginBottomSheet.TAG)
+                    } else {
+                        openMovieDetail(movie)
+                    }
+                },
                 onRemoveSavedClick = { movie ->
                     repository.toggleSaved(movie.id)
-                    com.example.apkbookingfilm.util.AppToast.show(requireContext(), "Dihapus: ${movie.title}")
+                    AppToast.show(requireContext(), "${AppLanguage.tr("Removed", "Dihapus")}: ${movie.title}")
                     refreshList()
                 }
             )

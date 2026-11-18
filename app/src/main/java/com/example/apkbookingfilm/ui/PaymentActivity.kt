@@ -19,6 +19,7 @@ import com.example.apkbookingfilm.model.Cinema
 import com.example.apkbookingfilm.model.FoodOrderItem
 import com.example.apkbookingfilm.model.Movie
 import com.example.apkbookingfilm.model.PaymentMethod
+import com.example.apkbookingfilm.util.AppLanguage
 import com.example.apkbookingfilm.util.AppToast
 import java.util.Locale
 
@@ -105,24 +106,47 @@ class PaymentActivity : AppCompatActivity() {
         val currentCinema = cinema ?: return
 
         if (isFoodOnly) {
-            binding.tvOrderMovieTitle.text = "Cinema Food Order"
-            binding.tvOrderDateTime.text = "Ambil di konter hari ini"
+            val allDrinks = foodItems.isNotEmpty() && foodItems.all { it.item.category.equals("Minuman", true) }
+            val allFood = foodItems.isNotEmpty() && foodItems.none { it.item.category.equals("Minuman", true) }
+            val orderCategoryLabel = when {
+                allDrinks -> AppLanguage.tr("Drinks", "Minuman")
+                allFood -> AppLanguage.tr("Food", "Makanan")
+                else -> AppLanguage.tr("Food & Drinks", "Makanan & Minuman")
+            }
+
+            binding.tvLabelOrderMovie.text = orderCategoryLabel
+            binding.tvOrderMovieTitle.gravity = android.view.Gravity.END
+            binding.tvOrderMovieTitle.text = foodItems.joinToString("\n") { "${it.quantity}x ${it.item.name}" }
+                .ifEmpty { AppLanguage.tr("Cinema Food & Drinks", "Makanan & Minuman Bioskop") }
+
+            binding.tvLabelOrderShowtime.text = AppLanguage.tr("Pickup", "Pengambilan")
+            binding.tvOrderDateTime.text = AppLanguage.tr("Today • F&B Counter", "Hari Ini • Konter F&B")
+            binding.tvLabelOrderCinema.text = AppLanguage.tr("Cinema", "Bioskop")
             binding.rowOrderSeats.visibility = View.GONE
+
+            binding.rowOrderFood.visibility = View.VISIBLE
+            binding.tvLabelOrderFood.text = AppLanguage.tr("Total Items", "Jumlah Item")
+            binding.tvOrderFood.text = "${foodItems.sumOf { it.quantity }} ${AppLanguage.tr("items", "item")}"
         } else {
+            binding.tvLabelOrderMovie.text = AppLanguage.tr("Movie", "Film")
             binding.tvOrderMovieTitle.text = currentMovie.title
+            binding.tvLabelOrderShowtime.text = AppLanguage.tr("Showtime", "Jadwal Tayang")
             binding.tvOrderDateTime.text = "$date • $time"
+            binding.tvLabelOrderCinema.text = AppLanguage.tr("Cinema", "Bioskop")
             binding.rowOrderSeats.visibility = View.VISIBLE
-            binding.tvOrderSeats.text = "${seats.joinToString(", ")} • ${seats.size} tiket"
+            binding.tvLabelOrderSeats.text = AppLanguage.tr("Seats", "Kursi")
+            binding.tvOrderSeats.text = "${seats.joinToString(", ")} • ${seats.size} ${AppLanguage.tr("tickets", "tiket")}"
+
+            if (foodItems.isNotEmpty()) {
+                binding.rowOrderFood.visibility = View.VISIBLE
+                binding.tvLabelOrderFood.text = AppLanguage.tr("Food & Drinks", "Makanan & Minuman")
+                binding.tvOrderFood.text = foodItems.joinToString("\n") { "${it.quantity}x ${it.item.name}" }
+            } else {
+                binding.rowOrderFood.visibility = View.GONE
+            }
         }
 
         binding.tvOrderCinema.text = currentCinema.name
-
-        if (foodItems.isNotEmpty()) {
-            binding.rowOrderFood.visibility = View.VISIBLE
-            binding.tvOrderFood.text = foodItems.joinToString("\n") { "${it.quantity}x ${it.item.name}" }
-        } else {
-            binding.rowOrderFood.visibility = View.GONE
-        }
 
         val formattedTotal = MovieRepository.formatRupiah(grandTotal)
         binding.tvOrderTotal.text = formattedTotal
@@ -167,11 +191,11 @@ class PaymentActivity : AppCompatActivity() {
         val sizeText = when {
             fileSizeBytes >= 1024 * 1024 -> String.format(Locale.US, "%.1f MB", fileSizeBytes / (1024.0 * 1024.0))
             fileSizeBytes > 0 -> String.format(Locale.US, "%d KB", fileSizeBytes / 1024)
-            else -> "Gambar siap"
+            else -> AppLanguage.tr("Image ready", "Gambar siap")
         }
 
         binding.tvUploadedFileName.text = displayName
-        binding.tvUploadedFileSize.text = "✓ $sizeText • Terunggah"
+        binding.tvUploadedFileSize.text = "✓ $sizeText • ${AppLanguage.tr("Uploaded", "Terunggah")}"
         binding.cardUploadedFile.visibility = View.VISIBLE
 
         binding.cardProofPreview.visibility = View.VISIBLE
@@ -186,14 +210,14 @@ class PaymentActivity : AppCompatActivity() {
         }
 
         binding.btnBookmarkPayment.setOnClickListener {
-            AppToast.show(this, "Order disimpan sementara")
+            AppToast.show(this, AppLanguage.tr("Order temporarily saved", "Order disimpan sementara"))
         }
 
         val openPaymentPicker = {
             PaymentMethodBottomSheet { method ->
                 selectedPaymentMethod = method
                 updatePaymentMethodUI()
-                AppToast.show(this, "Metode dipilih: ${method.name}")
+                AppToast.show(this, "${AppLanguage.tr("Method selected", "Metode dipilih")}: ${method.name}")
             }.show(supportFragmentManager, PaymentMethodBottomSheet.TAG)
         }
         binding.btnChangePaymentMethod.setOnClickListener { openPaymentPicker() }
@@ -203,7 +227,7 @@ class PaymentActivity : AppCompatActivity() {
             val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             val clip = ClipData.newPlainText("Account Number", selectedPaymentMethod.accountNumber)
             clipboard.setPrimaryClip(clip)
-            AppToast.show(this, "Disalin: ${selectedPaymentMethod.accountNumber}")
+            AppToast.show(this, "${AppLanguage.tr("Copied", "Disalin")}: ${selectedPaymentMethod.accountNumber}")
         }
 
         binding.btnCopyAmount.setOnClickListener {
@@ -211,7 +235,7 @@ class PaymentActivity : AppCompatActivity() {
             val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             val clip = ClipData.newPlainText("Transfer Amount", amountStr)
             clipboard.setPrimaryClip(clip)
-            AppToast.show(this, "Nominal disalin: $amountStr")
+            AppToast.show(this, "${AppLanguage.tr("Amount copied", "Nominal disalin")}: $amountStr")
         }
 
         binding.cardUploadDashed.setOnClickListener {
@@ -228,7 +252,10 @@ class PaymentActivity : AppCompatActivity() {
         binding.btnSubmitPaymentProof.setOnClickListener {
             val proof = selectedProofUri
             if (proof == null) {
-                AppToast.show(this, "Silakan upload screenshot bukti transfer terlebih dahulu")
+                AppToast.show(
+                    this,
+                    AppLanguage.tr("Please upload a screenshot of transfer proof first", "Silakan upload screenshot bukti transfer terlebih dahulu")
+                )
                 return@setOnClickListener
             }
 

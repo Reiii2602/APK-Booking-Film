@@ -10,6 +10,7 @@ import com.example.apkbookingfilm.databinding.ItemFoodCardBinding
 import com.example.apkbookingfilm.databinding.ItemFoodCartRowBinding
 import com.example.apkbookingfilm.databinding.ItemSeeMoreArrowBinding
 import com.example.apkbookingfilm.model.FoodItem
+import com.example.apkbookingfilm.util.AppLanguage
 
 enum class FoodViewType {
     HOME_CARD,
@@ -58,11 +59,13 @@ class FoodAdapter(
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (holder is SeeMoreVH) {
             holder.bind()
+            AppLanguage.applyToView(holder.itemView)
             return
         }
         val item = items[position]
         if (holder is HomeCardVH) holder.bind(item)
         else if (holder is CartRowVH) holder.bind(item)
+        AppLanguage.applyToView(holder.itemView)
     }
 
     inner class SeeMoreVH(private val b: ItemSeeMoreArrowBinding) : RecyclerView.ViewHolder(b.root) {

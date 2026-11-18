@@ -12,6 +12,7 @@ import com.example.apkbookingfilm.adapter.FoodViewType
 import com.example.apkbookingfilm.data.MovieRepository
 import com.example.apkbookingfilm.databinding.DialogFoodMenuBinding
 import com.example.apkbookingfilm.model.FoodOrderItem
+import com.example.apkbookingfilm.util.AppLanguage
 import com.example.apkbookingfilm.util.AppToast
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
@@ -44,8 +45,11 @@ class FoodOrderBottomSheet(
         }
 
         val city = repository.getSelectedCity()
-        val firstCinema = repository.getCinemasForCity(city).firstOrNull()?.name ?: "Bioskop"
-        binding.tvFoodMenuSubtitle.text = "Ambil di $firstCinema ($city)"
+        val firstCinema = repository.getCinemasForCity(city).firstOrNull()?.name ?: "Cinema"
+        binding.tvFoodMenuSubtitle.text = AppLanguage.tr(
+            "Pick up at $firstCinema ($city)",
+            "Ambil di $firstCinema ($city)"
+        )
 
         binding.rvFoodMenu.layoutManager = LinearLayoutManager(requireContext())
         binding.rvFoodMenu.adapter = FoodAdapter(
@@ -63,7 +67,10 @@ class FoodOrderBottomSheet(
             if (count > 0) {
                 AppToast.show(
                     requireContext(),
-                    "$count item camilan disimpan — ikut saat pilih kursi!"
+                    AppLanguage.tr(
+                        "$count items saved — included when choosing seats!",
+                        "$count item camilan disimpan — ikut saat pilih kursi!"
+                    )
                 )
             }
             dismiss()
@@ -72,16 +79,44 @@ class FoodOrderBottomSheet(
         binding.btnCheckoutFoodOnly.setOnClickListener {
             val orders = repository.getFoodCartOrders()
             if (orders.isEmpty()) {
-                AppToast.show(requireContext(), "Pilih minimal 1 makanan atau minuman")
+                AppToast.show(
+                    requireContext(),
+                    AppLanguage.tr("Select at least 1 food or drink item", "Pilih minimal 1 makanan atau minuman")
+                )
                 return@setOnClickListener
             }
             val cinema = repository.getCinemasForCity().firstOrNull() ?: repository.cinemas.first()
-            val intent = Intent(requireContext(), PaymentActivity::class.java).apply {
-                putExtra(PaymentActivity.EXTRA_CINEMA, cinema)
-                putExtra(PaymentActivity.EXTRA_FOOD_ONLY, true)
-                putExtra(PaymentActivity.EXTRA_FOOD_ITEMS, ArrayList<FoodOrderItem>(orders))
+            val hostActivity = requireActivity()
+            val launchPayment = {
+                val intent = Intent(hostActivity, PaymentActivity::class.java).apply {
+                    putExtra(PaymentActivity.EXTRA_CINEMA, cinema)
+                    putExtra(PaymentActivity.EXTRA_FOOD_ONLY, true)
+                    putExtra(PaymentActivity.EXTRA_FOOD_ITEMS, ArrayList<FoodOrderItem>(orders))
+                }
+                hostActivity.startActivity(intent)
             }
-            startActivity(intent)
+            if (!repository.isLoggedIn()) {
+                AppToast.show(
+                    hostActivity,
+                    AppLanguage.tr("Please sign in first to order food & drinks", "Silakan login terlebih dahulu untuk memesan makanan & minuman")
+                )
+                val fm = parentFragmentManager
+                dismiss()
+                LoginBottomSheet(
+                    onLoginSuccess = { launchPayment() },
+                    onSwitchToRegister = {
+                        CreateAccountBottomSheet(
+                            onRegisterSuccess = { launchPayment() },
+                            onSwitchToLogin = {
+                                LoginBottomSheet(onLoginSuccess = { launchPayment() })
+                                    .show(fm, LoginBottomSheet.TAG)
+                            }
+                        ).show(fm, CreateAccountBottomSheet.TAG)
+                    }
+                ).show(fm, LoginBottomSheet.TAG)
+                return@setOnClickListener
+            }
+            launchPayment()
             dismiss()
         }
     }
@@ -89,7 +124,7 @@ class FoodOrderBottomSheet(
     private fun updateSummary() {
         val count = repository.getFoodCartCount()
         val total = repository.getFoodCartTotal()
-        binding.tvFoodCartSummary.text = "$count item dipilih"
+        binding.tvFoodCartSummary.text = AppLanguage.tr("$count items selected", "$count item dipilih")
         binding.tvFoodCartTotal.text = MovieRepository.formatRupiah(total)
         binding.btnCheckoutFoodOnly.isEnabled = count > 0
     }
