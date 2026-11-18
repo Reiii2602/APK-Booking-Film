@@ -619,6 +619,54 @@
                         android:layout_height="1dp"
                         android:background="@color/divider_line" />
 
+                    <!-- Cek Update Aplikasi -->
+                    <LinearLayout
+                        android:id="@+id/btnRowCheckUpdate"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:paddingHorizontal="16dp">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:background="@drawable/bg_chip_unselected"
+                            android:padding="3dp"
+                            android:src="@drawable/ic_ticket"
+                            app:tint="@color/maroon_primary" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
+                            android:layout_weight="1"
+                            android:text="Cek Update Aplikasi"
+                            android:textColor="@color/text_primary"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/tvAppVersion"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="6dp"
+                            android:text="v1.0"
+                            android:textColor="@color/text_muted"
+                            android:textSize="12sp" />
+
+                        <ImageView
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:src="@drawable/ic_chevron_right"
+                            app:tint="@color/text_muted" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/divider_line" />
+
                     <!-- Log out -->
                     <LinearLayout
                         android:id="@+id/btnLogout"

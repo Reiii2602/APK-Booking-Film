@@ -1,11 +1,15 @@
 package com.example.apkbookingfilm.ui
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.apkbookingfilm.R
+import com.example.apkbookingfilm.adapter.CastAdapter
 import com.example.apkbookingfilm.adapter.DateAdapter
 import com.example.apkbookingfilm.adapter.DateItem
 import com.example.apkbookingfilm.data.MovieRepository
@@ -13,6 +17,7 @@ import com.example.apkbookingfilm.databinding.ActivityMovieDetailBinding
 import com.example.apkbookingfilm.model.Cinema
 import com.example.apkbookingfilm.model.Movie
 import com.example.apkbookingfilm.util.TmdbImageLoader
+import java.util.Locale
 
 class MovieDetailActivity : AppCompatActivity() {
 
@@ -35,10 +40,33 @@ class MovieDetailActivity : AppCompatActivity() {
         currentMovie = repository.getMovieById(movieId) ?: repository.movies[0]
         selectedCinema = repository.cinemas[0]
 
+        binding.rvCast.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        binding.rvCast.adapter = castAdapter
+
         setupViews()
         setupDates()
         setupCinemaShowtimes()
         setupListeners()
+        loadFullDetail(movieId)
+    }
+
+    private val castAdapter = CastAdapter(emptyList())
+
+    private fun loadFullDetail(movieId: String) {
+        binding.progressDetail.visibility = View.VISIBLE
+        repository.fetchMovieDetail(currentMovie?.id ?: movieId) { detail ->
+            if (isFinishing || isDestroyed) return@fetchMovieDetail
+            binding.progressDetail.visibility = View.GONE
+            if (detail != null) {
+                currentMovie = detail
+                setupViews()
+            }
+            if (currentMovie?.cast.isNullOrEmpty()) {
+                binding.tvCastEmpty.visibility = View.VISIBLE
+                binding.tvCastEmpty.text = if (detail?.hasFullDetail == true)
+                    "Data pemeran tidak tersedia." else "Gagal memuat pemeran. Periksa koneksi internet."
+            }
+        }
     }
 
     private fun setupViews() {
@@ -46,16 +74,36 @@ class MovieDetailActivity : AppCompatActivity() {
         TmdbImageLoader.loadBackdrop(binding.ivDetailPoster, movie)
 
         binding.tvMovieTitle.text = movie.title
-        binding.tvGenreDuration.text = "${movie.ageRating} • 2024 • ${movie.genre} • ${movie.duration}"
-        binding.tvRatingScore.text = "${movie.rating} / 10"
+        val meta = listOf(movie.ageRating, movie.releaseYear, movie.genre, movie.duration)
+            .filter { it.isNotEmpty() && it != "—" }
+            .distinct()
+        binding.tvGenreDuration.text = meta.joinToString(" • ")
+        val votes = if (movie.voteCount > 0) "  (${formatVotes(movie.voteCount)})" else ""
+        binding.tvRatingScore.text = "${movie.rating} / 10$votes"
         binding.tvSynopsis.text = movie.synopsis
-        binding.tvDirector.text = "DIRECTOR: ${movie.director}"
+        binding.tvDirector.text = "DIRECTOR: ${movie.director.ifEmpty { "-" }}"
+        binding.tvStatusLabel.text = if (movie.isComingSoon) "COMING SOON" else "NOW SHOWING"
+        binding.tvTagline.visibility = if (movie.tagline.isNotEmpty()) View.VISIBLE else View.GONE
+        binding.tvTagline.text = "\u201C${movie.tagline}\u201D"
+        binding.tvTrailerLabel.text = if (movie.trailerKey.isNotEmpty()) "TONTON TRAILER" else "TRAILER"
         binding.tvBottomPrice.text = "Rp50.000/adult"
         binding.tvBottomShowtimeDate.text = "$selectedDate • $selectedTime"
         binding.tvBottomShowtimeVenue.text = "${selectedCinema?.name ?: "Ambarrukmo XXI"} • IMAX"
 
+        if (movie.cast.isNotEmpty()) {
+            binding.tvCastEmpty.visibility = View.GONE
+            binding.rvCast.visibility = View.VISIBLE
+            castAdapter.updateList(movie.cast)
+        }
+
         updateBookmarkIcon()
     }
+
+    private fun formatVotes(count: Int): String = when {
+        count >= 1_000_000 -> String.format(Locale.US, "%.1fM", count / 1_000_000.0)
+        count >= 1_000 -> String.format(Locale.US, "%.1fK", count / 1_000.0)
+        else -> count.toString()
+    } + " votes"
 
     private fun updateBookmarkIcon() {
         val movie = currentMovie ?: return
@@ -136,7 +184,26 @@ class MovieDetailActivity : AppCompatActivity() {
         }
 
         binding.btnTrailer.setOnClickListener {
-            Toast.makeText(this, "Playing Trailer (2:24)", Toast.LENGTH_SHORT).show()
+            val key = currentMovie?.trailerKey.orEmpty()
+            if (key.isEmpty()) {
+                Toast.makeText(this, "Trailer belum tersedia", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            try {
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:$key")))
+            } catch (_: ActivityNotFoundException) {
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=$key")))
+            }
+        }
+
+        binding.tvFullDetails.setOnClickListener {
+            val tmdbId = currentMovie?.tmdbId ?: 0
+            if (tmdbId > 0) {
+                try {
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.themoviedb.org/movie/$tmdbId")))
+                } catch (_: ActivityNotFoundException) {
+                }
+            }
         }
 
         binding.btnBookmark.setOnClickListener {
