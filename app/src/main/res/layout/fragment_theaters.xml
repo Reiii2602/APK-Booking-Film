@@ -12,7 +12,7 @@
         android:orientation="vertical"
         android:paddingBottom="100dp">
 
-        <!-- Top Header: Back & Bookmark ONLY (NO FRAME TEXT) -->
+        <!-- Top Header: Back & Bookmark -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -42,7 +42,7 @@
                 app:tint="@color/text_primary" />
         </LinearLayout>
 
-        <!-- Title & Subtitle -->
+        <!-- Title & City Bar -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -57,16 +57,75 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
             android:paddingHorizontal="20dp"
-            android:text="Find nearby cinemas, formats and today's showtimes."
+            android:text="Temukan bioskop terdekat &amp; scan lokasi di seluruh Indonesia."
             android:textColor="@color/text_secondary"
             android:textSize="12sp" />
 
-        <!-- Search box (From Image 5) -->
+        <!-- City selector + Scan GPS row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="12dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:id="@+id/layoutCityTheaters"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_chip_unselected"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="12dp">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_location"
+                    app:tint="@color/maroon_primary" />
+
+                <TextView
+                    android:id="@+id/tvCityTheaters"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:text="Yogyakarta"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:rotation="90"
+                    android:src="@drawable/ic_chevron_right"
+                    app:tint="@color/text_muted" />
+            </LinearLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnScanLocationTheaters"
+                style="@style/PrimaryMaroonButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:layout_marginStart="8dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:paddingHorizontal="14dp"
+                android:text="Scan Lokasi"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <!-- Search box -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="46dp"
             android:layout_marginHorizontal="20dp"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="12dp"
             app:cardBackgroundColor="@color/bg_surface"
             app:cardCornerRadius="23dp"
             app:cardElevation="0dp"
@@ -92,14 +151,14 @@
                     android:layout_height="match_parent"
                     android:layout_marginStart="10dp"
                     android:background="@null"
-                    android:hint="Search theaters or neighborhoods"
+                    android:hint="Cari nama bioskop atau mall..."
                     android:textColor="@color/text_primary"
                     android:textColorHint="@color/text_muted"
                     android:textSize="12sp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Filter Chips: Nearby (Maroon) | IMAX | Dolby Cinema | Open now -->
+        <!-- Filter Chips -->
         <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -120,7 +179,7 @@
                     android:background="@drawable/bg_chip_selected"
                     android:paddingHorizontal="14dp"
                     android:paddingVertical="7dp"
-                    android:text="Nearby"
+                    android:text="Semua"
                     android:textColor="@color/white"
                     android:textSize="12sp"
                     android:textStyle="bold" />
@@ -145,7 +204,7 @@
                     android:background="@drawable/bg_chip_unselected"
                     android:paddingHorizontal="14dp"
                     android:paddingVertical="7dp"
-                    android:text="Dolby Cinema"
+                    android:text="Dolby Atmos"
                     android:textColor="@color/chip_text"
                     android:textSize="12sp" />
 
@@ -157,44 +216,89 @@
                     android:background="@drawable/bg_chip_unselected"
                     android:paddingHorizontal="14dp"
                     android:paddingVertical="7dp"
-                    android:text="Open now"
+                    android:text="4DX / Premiere"
                     android:textColor="@color/chip_text"
                     android:textSize="12sp" />
             </LinearLayout>
         </HorizontalScrollView>
 
-        <!-- MAP PREVIEW GRAPHIC CARD (From Image 5) -->
+        <!-- INTERACTIVE MAP PREVIEW CARD (Clickable!) -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardMapPreview"
             android:layout_width="match_parent"
-            android:layout_height="140dp"
+            android:layout_height="180dp"
             android:layout_marginHorizontal="20dp"
             android:layout_marginTop="16dp"
+            android:clickable="true"
+            android:focusable="true"
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
             app:strokeColor="@color/divider_line"
             app:strokeWidth="1dp">
 
-            <ImageView
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:scaleType="centerCrop"
-                android:src="@drawable/img_map_theaters" />
+                android:layout_height="match_parent">
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/img_map_theaters" />
+
+                <WebView
+                    android:id="@+id/webTheaterMap"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+
+                <!-- Clickable Overlay Button to Open Full Map / Google Maps -->
+                <LinearLayout
+                    android:id="@+id/btnOpenMapsNearby"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|end"
+                    android:layout_margin="10dp"
+                    android:background="@drawable/bg_chip_selected"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="7dp">
+
+                    <ImageView
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:src="@drawable/ic_location"
+                        app:tint="@color/white" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="5dp"
+                        android:text="Buka Peta Bioskop Sekitar"
+                        android:textColor="@color/white"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </FrameLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Section Header: 3 theaters near you | Sorted by distance -->
+        <!-- Section Header -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="18dp"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingHorizontal="20dp">
 
             <TextView
+                android:id="@+id/tvTheatersNearHeader"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Theaters near you (Yogyakarta)"
+                android:text="Bioskop di Yogyakarta"
                 android:textColor="@color/text_primary"
                 android:textSize="15sp"
                 android:textStyle="bold" />
@@ -202,7 +306,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Sorted by distance"
+                android:text="Ketuk untuk jadwal"
                 android:textColor="@color/text_muted"
                 android:textSize="11sp" />
         </LinearLayout>

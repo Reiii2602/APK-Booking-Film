@@ -215,6 +215,7 @@
 
                     <!-- Seats -->
                     <LinearLayout
+                        android:id="@+id/rowOrderSeats"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
@@ -233,6 +234,34 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="E6, E7 • 2 adults"
+                            android:textColor="@color/text_primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <!-- Food & Drinks (optional) -->
+                    <LinearLayout
+                        android:id="@+id/rowOrderFood"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:orientation="horizontal"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Cinema Food"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/tvOrderFood"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="end"
+                            android:text="1x COMBO A"
                             android:textColor="@color/text_primary"
                             android:textSize="12sp"
                             android:textStyle="bold" />
@@ -391,10 +420,11 @@
                         android:orientation="horizontal">
 
                         <TextView
+                            android:id="@+id/tvTransferAmount"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Rp50.000 ($48.00)"
+                            android:text="Rp50.000"
                             android:textColor="@color/text_primary"
                             android:textSize="14sp"
                             android:textStyle="bold" />
@@ -491,13 +521,14 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Uploaded File Box (From Image 4) -->
+            <!-- Uploaded File Box (Hidden initially until user picks real image) -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardUploadedFile"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="20dp"
                 android:layout_marginTop="10dp"
+                android:visibility="gone"
                 app:cardBackgroundColor="@color/bg_surface"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="0dp"
@@ -527,18 +558,22 @@
                         android:orientation="vertical">
 
                         <TextView
+                            android:id="@+id/tvUploadedFileName"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="transfer-proof-0611.jpg"
+                            android:ellipsize="middle"
+                            android:singleLine="true"
+                            android:text="bukti-transfer.jpg"
                             android:textColor="@color/text_primary"
                             android:textSize="12sp"
                             android:textStyle="bold" />
 
                         <TextView
+                            android:id="@+id/tvUploadedFileSize"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="1dp"
-                            android:text="✓ 1.2 MB • Uploaded"
+                            android:text="✓ Terpilih"
                             android:textColor="@color/green_success"
                             android:textSize="11sp" />
                     </LinearLayout>
@@ -549,6 +584,46 @@
                         android:layout_height="20dp"
                         android:src="@drawable/ic_close"
                         app:tint="@color/text_muted" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Preview Gambar Screenshot Bukti Transfer (Di bawah card file) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardProofPreview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="10dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/bg_surface"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/peach_border"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Preview Bukti Transfer:"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:id="@+id/ivProofPreview"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:adjustViewBounds="true"
+                        android:contentDescription="Preview bukti transfer"
+                        android:maxHeight="340dp"
+                        android:scaleType="fitCenter" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

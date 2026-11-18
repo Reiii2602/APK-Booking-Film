@@ -102,6 +102,39 @@
                         android:textSize="10sp"
                         android:textStyle="bold" />
                 </LinearLayout>
+
+                <!-- Inline In-App Trailer Cuplikan Player -->
+                <FrameLayout
+                    android:id="@+id/layoutTrailerPlayer"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@color/black"
+                    android:visibility="gone">
+
+                    <WebView
+                        android:id="@+id/webTrailer"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
+
+                    <ProgressBar
+                        android:id="@+id/progressTrailer"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:layout_gravity="center"
+                        android:indeterminateTint="@color/white" />
+
+                    <ImageView
+                        android:id="@+id/btnCloseTrailer"
+                        android:layout_width="34dp"
+                        android:layout_height="34dp"
+                        android:layout_gravity="top|end"
+                        android:layout_margin="14dp"
+                        android:background="@drawable/bg_chip_selected"
+                        android:backgroundTint="#CC000000"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_close"
+                        app:tint="@color/white" />
+                </FrameLayout>
             </FrameLayout>
 
             <!-- Movie Information Sheet Content -->
@@ -319,10 +352,16 @@
                     android:orientation="horizontal">
 
                     <LinearLayout
+                        android:id="@+id/layoutCityDetail"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:background="@drawable/bg_chip_unselected"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="5dp">
 
                         <ImageView
                             android:layout_width="14dp"
@@ -331,6 +370,7 @@
                             app:tint="@color/maroon_primary" />
 
                         <TextView
+                            android:id="@+id/tvCityDetail"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="4dp"
@@ -342,8 +382,8 @@
                         <ImageView
                             android:layout_width="14dp"
                             android:layout_height="14dp"
-                            android:src="@drawable/ic_chevron_right"
                             android:rotation="90"
+                            android:src="@drawable/ic_chevron_right"
                             app:tint="@color/text_muted" />
                     </LinearLayout>
 
@@ -353,353 +393,25 @@
                         android:layout_weight="1" />
 
                     <TextView
+                        android:id="@+id/tvFormatFilterDetail"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="All formats"
+                        android:background="@drawable/bg_chip_unselected"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="5dp"
+                        android:text="All formats ⌄"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>
 
-                <!-- Cinema venue 1: AMC Lincoln Square 13 -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardCinema1"
+                <!-- Dynamic Cinema & Showtimes List -->
+                <LinearLayout
+                    android:id="@+id/layoutCinemaShowtimes"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    app:cardBackgroundColor="@color/bg_surface"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp"
-                    app:strokeColor="@color/divider_line"
-                    app:strokeWidth="1dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:text="Ambarrukmo XXI"
-                                android:textColor="@color/text_primary"
-                                android:textSize="15sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="1.2 km"
-                                android:textColor="@color/text_muted"
-                                android:textSize="11sp" />
-                        </LinearLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="Plaza Ambarrukmo Lt. 3 • Yogyakarta"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="11sp" />
-
-                        <!-- Formats -->
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:background="@drawable/bg_chip_unselected"
-                                android:backgroundTint="@color/peach_bg"
-                                android:paddingHorizontal="6dp"
-                                android:paddingVertical="2dp"
-                                android:text="IMAX WITH LASER"
-                                android:textColor="@color/maroon_primary"
-                                android:textSize="10sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="6dp"
-                                android:background="@drawable/bg_chip_unselected"
-                                android:paddingHorizontal="6dp"
-                                android:paddingVertical="2dp"
-                                android:text="English • CC"
-                                android:textColor="@color/text_secondary"
-                                android:textSize="10sp" />
-                        </LinearLayout>
-
-                        <!-- Times: 16:00 $24.00 | 19:30 SELECTED | 22:45 $22.00 -->
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:orientation="horizontal">
-
-                            <LinearLayout
-                                android:id="@+id/time1_1"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_marginEnd="6dp"
-                                android:layout_weight="1"
-                                android:background="@drawable/bg_chip_unselected"
-                                android:gravity="center"
-                                android:orientation="vertical"
-                                android:paddingVertical="8dp">
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="16:00"
-                                    android:textColor="@color/chip_text"
-                                    android:textSize="13sp"
-                                    android:textStyle="bold" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="$24.00"
-                                    android:textColor="@color/text_muted"
-                                    android:textSize="10sp" />
-                            </LinearLayout>
-
-                            <LinearLayout
-                                android:id="@+id/time1_2"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_marginEnd="6dp"
-                                android:layout_weight="1"
-                                android:background="@drawable/bg_chip_selected"
-                                android:gravity="center"
-                                android:orientation="vertical"
-                                android:paddingVertical="8dp">
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="19:30"
-                                    android:textColor="@color/white"
-                                    android:textSize="13sp"
-                                    android:textStyle="bold" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="✓ SELECTED"
-                                    android:textColor="@color/peach_bg"
-                                    android:textSize="10sp"
-                                    android:textStyle="bold" />
-                            </LinearLayout>
-
-                            <LinearLayout
-                                android:id="@+id/time1_3"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:background="@drawable/bg_chip_unselected"
-                                android:gravity="center"
-                                android:orientation="vertical"
-                                android:paddingVertical="8dp">
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="22:45"
-                                    android:textColor="@color/chip_text"
-                                    android:textSize="13sp"
-                                    android:textStyle="bold" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="$22.00"
-                                    android:textColor="@color/text_muted"
-                                    android:textSize="10sp" />
-                            </LinearLayout>
-                        </LinearLayout>
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Cinema venue 2: Regal Union Square -->
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardCinema2"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    app:cardBackgroundColor="@color/bg_surface"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp"
-                    app:strokeColor="@color/divider_line"
-                    app:strokeWidth="1dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:text="Empire XXI Jogja"
-                                android:textColor="@color/text_primary"
-                                android:textSize="15sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="2.4 km"
-                                android:textColor="@color/text_muted"
-                                android:textSize="11sp" />
-                        </LinearLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="Jl. Urip Sumoharjo No. 104 • Yogyakarta"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="11sp" />
-
-                        <!-- Formats -->
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:background="@drawable/bg_chip_unselected"
-                                android:backgroundTint="@color/peach_bg"
-                                android:paddingHorizontal="6dp"
-                                android:paddingVertical="2dp"
-                                android:text="RPX • 2D"
-                                android:textColor="@color/maroon_primary"
-                                android:textSize="10sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="6dp"
-                                android:background="@drawable/bg_chip_unselected"
-                                android:paddingHorizontal="6dp"
-                                android:paddingVertical="2dp"
-                                android:text="English • CC"
-                                android:textColor="@color/text_secondary"
-                                android:textSize="10sp" />
-                        </LinearLayout>
-
-                        <!-- Times: 15:15 | 18:45 | 21:50 -->
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:orientation="horizontal">
-
-                            <LinearLayout
-                                android:id="@+id/time2_1"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_marginEnd="6dp"
-                                android:layout_weight="1"
-                                android:background="@drawable/bg_chip_unselected"
-                                android:gravity="center"
-                                android:orientation="vertical"
-                                android:paddingVertical="8dp">
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="15:15"
-                                    android:textColor="@color/chip_text"
-                                    android:textSize="13sp"
-                                    android:textStyle="bold" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="$19.00"
-                                    android:textColor="@color/text_muted"
-                                    android:textSize="10sp" />
-                            </LinearLayout>
-
-                            <LinearLayout
-                                android:id="@+id/time2_2"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_marginEnd="6dp"
-                                android:layout_weight="1"
-                                android:background="@drawable/bg_chip_unselected"
-                                android:gravity="center"
-                                android:orientation="vertical"
-                                android:paddingVertical="8dp">
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="18:45"
-                                    android:textColor="@color/chip_text"
-                                    android:textSize="13sp"
-                                    android:textStyle="bold" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="$21.00"
-                                    android:textColor="@color/text_muted"
-                                    android:textSize="10sp" />
-                            </LinearLayout>
-
-                            <LinearLayout
-                                android:id="@+id/time2_3"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:background="@drawable/bg_chip_unselected"
-                                android:gravity="center"
-                                android:orientation="vertical"
-                                android:paddingVertical="8dp">
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="21:50"
-                                    android:textColor="@color/chip_text"
-                                    android:textSize="13sp"
-                                    android:textStyle="bold" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="$19.00"
-                                    android:textColor="@color/text_muted"
-                                    android:textSize="10sp" />
-                            </LinearLayout>
-                        </LinearLayout>
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
+                    android:orientation="vertical" />
             </LinearLayout>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

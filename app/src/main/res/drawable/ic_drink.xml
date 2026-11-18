@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Straw -->
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M29,6 L34,6 L34,8.5 L30.5,8.5 L26,18 L23.5,18 Z" />
+    <!-- Lid -->
+    <path
+        android:fillColor="#581220"
+        android:pathData="M13,16 C13,14.9 13.9,14 15,14 L33,14 C34.1,14 35,14.9 35,16 L35,19 L13,19 Z" />
+    <!-- Cup body -->
+    <path
+        android:fillColor="#9A273D"
+        android:pathData="M15,19 L33,19 L30.5,42 C30.3,43.1 29.3,44 28.2,44 L19.8,44 C18.7,44 17.7,43.1 17.5,42 Z" />
+    <!-- Highlight band -->
+    <path
+        android:fillColor="#FBF2EC"
+        android:pathData="M16.2,26 L31.8,26 L31.2,33 L16.8,33 Z" />
+</vector>

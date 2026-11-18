@@ -39,6 +39,13 @@ class TicketSuccessActivity : AppCompatActivity() {
         binding.tvTicketTime.text = currentBooking.time
         binding.tvTicketSeats.text = currentBooking.seats.joinToString(", ")
         binding.tvTicketBookingId.text = "#${currentBooking.bookingId}"
+
+        if (currentBooking.foodItems.isNotEmpty()) {
+            binding.layoutTicketFood.visibility = android.view.View.VISIBLE
+            binding.tvTicketFood.text = currentBooking.foodItems.joinToString(", ") {
+                "${it.quantity}x ${it.item.name}"
+            }
+        }
     }
 
     private fun setupListeners() {

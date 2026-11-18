@@ -44,18 +44,6 @@ class LoginBottomSheet(
             dismiss()
         }
 
-        // Quick Demo 1-Tap Google Login
-        binding.btnQuickDemoLogin.setOnClickListener {
-            repository.login("Daffa Fadhul Rahman", "daffasigma@gmail.com", "Google")
-            Toast.makeText(
-                requireContext(),
-                "Welcome back, Daffa Fadhul Rahman!",
-                Toast.LENGTH_SHORT
-            ).show()
-            onLoginSuccess()
-            dismiss()
-        }
-
         // Continue with Apple
         binding.btnContinueWithApple.setOnClickListener {
             repository.login("Daffa Fadhul Rahman", "daffasigma@gmail.com", "Apple")

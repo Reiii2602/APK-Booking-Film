@@ -10,10 +10,13 @@ data class Booking(
     val time: String,
     val seats: List<String>,
     val subtotal: Int,
-    val serviceFee: Int = 3000,
+    val serviceFee: Int = 0,
     val totalPrice: Int,
-    val paymentMethod: String = "QRIS",
+    val paymentMethod: String = "Bank Transfer BCA",
     val paymentProofUploaded: Boolean = false,
     val isPaid: Boolean = true,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val foodItems: List<FoodOrderItem> = emptyList(),
+    val foodTotal: Int = 0,
+    val proofUri: String = ""
 ) : Serializable

@@ -131,8 +131,12 @@ class ProfileFragment : Fragment() {
             Toast.makeText(requireContext(), "Notifications: ON", Toast.LENGTH_SHORT).show()
         }
 
+        binding.tvPreferredCity.text = repository.getSelectedCity()
         binding.btnRowPreferredCity.setOnClickListener {
-            Toast.makeText(requireContext(), "City: Yogyakarta", Toast.LENGTH_SHORT).show()
+            CityPickerDialog { chosen ->
+                binding.tvPreferredCity.text = chosen
+                Toast.makeText(requireContext(), "Kota diubah ke $chosen", Toast.LENGTH_SHORT).show()
+            }.show(parentFragmentManager, CityPickerDialog.TAG)
         }
 
         binding.btnRowHelpSupport.setOnClickListener {
