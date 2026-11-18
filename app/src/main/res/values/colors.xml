@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="bg_white">#FFFFFFFF</color>
+
+    <!-- Figma Cinema Theme Colors -->
+    <color name="maroon_primary">#781D2E</color>
+    <color name="maroon_dark">#581220</color>
+    <color name="maroon_light">#9A273D</color>
+    <color name="maroon_tint">#1A781D2E</color>
+    <color name="maroon_soft">#F9ECEF</color>
+
+    <color name="peach_bg">#FBF2EC</color>
+    <color name="peach_card">#F7EBE4</color>
+    <color name="peach_card_darker">#F0DDD2</color>
+    <color name="peach_border">#E8D4C8</color>
+
+    <color name="bg_cream">#FAF7F5</color>
+    <color name="bg_surface">#FFFFFF</color>
+    <color name="divider_line">#EEE7E2</color>
+
+    <color name="text_primary">#1D1917</color>
+    <color name="text_secondary">#6E6763</color>
+    <color name="text_muted">#A39C98</color>
+
+    <color name="chip_bg">#F4ECE7</color>
+    <color name="chip_text">#443934</color>
+
+    <color name="seat_available">#FFFFFF</color>
+    <color name="seat_available_stroke">#D4CAC4</color>
+    <color name="seat_reserved">#E8E2DE</color>
+    <color name="seat_selected">#781D2E</color>
+
+    <color name="gold_star">#F59E0B</color>
+    <color name="green_success">#15803D</color>
+    <color name="green_success_bg">#DCFCE7</color>
+
+    <color name="google_blue">#4285F4</color>
+    <color name="apple_black">#000000</color>
+</resources>

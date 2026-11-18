@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Cinema Booking</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_theaters">Theaters</string>
+    <string name="nav_saved">Saved</string>
+    <string name="nav_profile">Profile</string>
+    <string name="welcome_back">Welcome back</string>
+    <string name="highlight">Highlight</string>
+    <string name="now_showing">Now Showing</string>
+    <string name="coming_soon">Coming Soon</string>
+    <string name="theaters_near_you">Theaters Near You</string>
+    <string name="choose_seats">CHOOSE SEATS</string>
+    <string name="continue_to_payment">CONTINUE TO PAYMENT</string>
+    <string name="submit_payment_proof">SUBMIT PAYMENT PROOF</string>
+</resources>
