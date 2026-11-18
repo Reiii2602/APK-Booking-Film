@@ -11,6 +11,7 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.FileProvider
+import androidx.fragment.app.FragmentActivity
 import com.example.apkbookingfilm.BuildConfig
 import com.example.apkbookingfilm.databinding.DialogUpdateProgressBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -64,6 +65,17 @@ object UpdateManager {
 
     fun showUpdateDialog(activity: Activity, info: UpdateInfo) {
         if (isDownloading || activeDialog?.isShowing == true) return
+        if (activity is FragmentActivity) {
+            val fm = activity.supportFragmentManager
+            if (fm.findFragmentByTag(UpdateBottomSheet.TAG) != null || fm.isStateSaved) return
+            UpdateBottomSheet(
+                info = info,
+                onUpdateClick = { startUpdate(activity, info) },
+                onDismissClick = { dismissedThisSession = true }
+            ).show(fm, UpdateBottomSheet.TAG)
+            return
+        }
+
         val sizeText = if (info.apkSize > 0) String.format(Locale.US, " (%.1f MB)", info.apkSize / 1024.0 / 1024.0) else ""
         val changelog = info.changelog.ifEmpty { "Perbaikan bug & peningkatan performa." }
         val message = "Versi baru v${info.versionName}$sizeText sudah tersedia.\n" +
