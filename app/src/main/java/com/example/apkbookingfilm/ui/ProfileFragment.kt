@@ -225,16 +225,17 @@ class ProfileFragment : Fragment() {
         }
 
         binding.btnLogout.setOnClickListener {
-            AlertDialog.Builder(requireContext())
-                .setTitle("Log Out")
-                .setMessage("Yakin ingin keluar dari akun kamu?")
-                .setPositiveButton("Log Out") { _, _ ->
-                    repository.logout()
-                    updateProfileUI()
-                    AppToast.show(requireContext(), "Berhasil keluar akun")
-                }
-                .setNegativeButton("Batal", null)
-                .show()
+            ThemedConfirmBottomSheet(
+                badgeText = "KELUAR AKUN",
+                title = "Log Out",
+                message = "Yakin ingin keluar dari akun kamu?",
+                positiveText = "LOG OUT",
+                negativeText = "BATAL"
+            ) {
+                repository.logout()
+                updateProfileUI()
+                AppToast.show(requireContext(), "Berhasil keluar akun")
+            }.show(parentFragmentManager, ThemedConfirmBottomSheet.TAG)
         }
     }
 

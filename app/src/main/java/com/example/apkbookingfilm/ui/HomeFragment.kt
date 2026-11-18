@@ -118,7 +118,7 @@ class HomeFragment : Fragment() {
                 binding.ivUserAvatarHome.visibility = View.GONE
             }
             binding.tvWelcomeUser.text = "Welcome back, ${user.name}"
-            binding.tvWelcomeSubtitle.text = "📍 $city • ${user.points} Poin • ${user.moviesCount} Tiket"
+            binding.tvWelcomeSubtitle.text = "Book your favorite movies & snacks today"
         } else {
             binding.btnLoginTopHome.visibility = View.VISIBLE
             binding.cardUserAvatarHome.visibility = View.GONE
