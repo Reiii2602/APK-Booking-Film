@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_rounded_card"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <!-- Drag Handle -->
+    <View
+        android:layout_width="40dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/bg_chip_unselected" />
+
+    <!-- Top Badge (Matching LoginBottomSheet) -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:background="@drawable/bg_chip_unselected"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="6dp">
+
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@drawable/ic_ticket"
+            app:tint="@color/maroon_primary" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:letterSpacing="0.06"
+            android:text="APP UPDATE"
+            android:textColor="@color/maroon_primary"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Title & Subtitle -->
+    <TextView
+        android:id="@+id/tvUpdateTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:gravity="center"
+        android:text="Update Tersedia!"
+        android:textColor="@color/text_primary"
+        android:textSize="22sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvUpdateSubtitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:gravity="center"
+        android:text="Versi terbaru sudah siap diunduh dan langsung menimpa aplikasi lama."
+        android:textColor="@color/text_secondary"
+        android:textSize="13sp" />
+
+    <!-- Version & Changelog Card -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:background="@drawable/bg_peach_card"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Version Comparison Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Versi Sekarang"
+                    android:textColor="@color/text_muted"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:id="@+id/tvCurrentVersion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="v1.0.2"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_arrow_forward"
+                app:tint="@color/maroon_primary" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="end"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Versi Terbaru"
+                    android:textColor="@color/text_muted"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:id="@+id/tvNewVersion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="v1.0.3 (6.3 MB)"
+                    android:textColor="@color/maroon_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginVertical="12dp"
+            android:background="@color/peach_border" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:letterSpacing="0.06"
+            android:text="YANG BARU"
+            android:textColor="@color/maroon_primary"
+            android:textSize="10sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvUpdateChangelog"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:ellipsize="end"
+            android:lineSpacingExtra="2dp"
+            android:maxLines="6"
+            android:text="Perbaikan bug &amp; peningkatan performa."
+            android:textColor="@color/text_primary"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <!-- Safe Update Note -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@drawable/ic_check_circle"
+            app:tint="@color/green_success" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Data login, watchlist &amp; tiket kamu tetap aman tanpa uninstall."
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <!-- Primary Update Button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnUpdateNow"
+        style="@style/PrimaryMaroonButton"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_marginTop="18dp"
+        android:text="UPDATE SEKARANG"
+        android:textSize="14sp" />
+
+    <!-- Secondary Later Button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnUpdateLater"
+        style="@style/OutlineMaroonButton"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="10dp"
+        android:text="NANTI SAJA"
+        android:textSize="13sp" />
+</LinearLayout>
