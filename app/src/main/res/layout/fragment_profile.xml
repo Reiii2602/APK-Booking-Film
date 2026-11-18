@@ -561,6 +561,7 @@
                             android:textSize="14sp" />
 
                         <TextView
+                            android:id="@+id/tvPreferredCity"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginEnd="6dp"
@@ -1143,6 +1144,7 @@
                             android:textSize="14sp" />
 
                         <TextView
+                            android:id="@+id/tvPreferredCityGuest"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginEnd="6dp"

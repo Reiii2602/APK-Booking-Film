@@ -8,7 +8,7 @@
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginBottom="90dp"
+        android:layout_marginBottom="100dp"
         android:fillViewport="true">
 
         <LinearLayout
@@ -17,7 +17,7 @@
             android:orientation="vertical"
             android:paddingBottom="24dp">
 
-            <!-- Top Header: Back & Bookmark (NO FRAME TEXT) -->
+            <!-- Top Header -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -67,7 +67,7 @@
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp" />
 
-            <!-- Cinema Screen Indicator (Red curved glow from Image 2) -->
+            <!-- Cinema Screen Indicator -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -76,7 +76,6 @@
                 android:orientation="vertical"
                 android:paddingHorizontal="36dp">
 
-                <!-- Red Screen Bar -->
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="8dp"
@@ -94,7 +93,7 @@
                     android:textStyle="bold" />
             </LinearLayout>
 
-            <!-- Interactive Seat Grid Container with Row Labels (A..H) on left and right -->
+            <!-- Interactive Seat Grid Container with Row Labels (A..H) -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -103,7 +102,6 @@
                 android:orientation="horizontal"
                 android:paddingHorizontal="16dp">
 
-                <!-- Left Row Labels A..H -->
                 <LinearLayout
                     android:id="@+id/layoutRowLabelsLeft"
                     android:layout_width="20dp"
@@ -111,7 +109,6 @@
                     android:gravity="center_horizontal"
                     android:orientation="vertical" />
 
-                <!-- 8 Columns Grid (4 seats, aisle, 4 seats) -->
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rvSeats"
                     android:layout_width="wrap_content"
@@ -119,7 +116,6 @@
                     android:layout_marginHorizontal="6dp"
                     android:overScrollMode="never" />
 
-                <!-- Right Row Labels A..H -->
                 <LinearLayout
                     android:id="@+id/layoutRowLabelsRight"
                     android:layout_width="20dp"
@@ -205,95 +201,96 @@
                         android:id="@+id/tvSeatsCountDesc"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="2 of 8 seats • Standard"
+                        android:text="0 seats selected"
                         android:textColor="@color/text_muted"
                         android:textSize="12sp" />
                 </LinearLayout>
 
-                <!-- Selected seat chips (e.g. E6 x, E7 x) -->
-                <LinearLayout
-                    android:id="@+id/layoutSelectedChips"
+                <TextView
+                    android:id="@+id/tvNoSeatsHint"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Belum ada kursi dipilih — ketuk kursi tersedia di atas."
+                    android:textColor="@color/text_muted"
+                    android:textSize="12sp" />
+
+                <HorizontalScrollView
+                    android:id="@+id/scrollSelectedChips"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
+                    android:scrollbars="none"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:id="@+id/layoutSelectedChips"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal" />
+                </HorizontalScrollView>
+            </LinearLayout>
+
+            <!-- Divider -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="20dp"
+                android:background="@color/divider_line" />
+
+            <!-- Add-On Cinema Food & Drinks Section -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:orientation="vertical"
+                android:paddingHorizontal="20dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
                     android:orientation="horizontal">
 
-                    <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/chipSeat1"
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="🍿 Tambah Makanan &amp; Minuman"
+                        android:textColor="@color/text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvFoodAddonTotal"
                         android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:layout_marginEnd="10dp"
-                        app:cardBackgroundColor="@color/bg_surface"
-                        app:cardCornerRadius="8dp"
-                        app:cardElevation="0dp"
-                        app:strokeColor="@color/maroon_primary"
-                        app:strokeWidth="1.5dp">
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="match_parent"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal"
-                            android:paddingHorizontal="12dp">
-
-                            <TextView
-                                android:id="@+id/tvChip1Text"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="E6"
-                                android:textColor="@color/maroon_primary"
-                                android:textSize="13sp"
-                                android:textStyle="bold" />
-
-                            <ImageView
-                                android:layout_width="14dp"
-                                android:layout_height="14dp"
-                                android:layout_marginStart="8dp"
-                                android:src="@drawable/ic_close"
-                                app:tint="@color/maroon_primary" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/chipSeat2"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        app:cardBackgroundColor="@color/bg_surface"
-                        app:cardCornerRadius="8dp"
-                        app:cardElevation="0dp"
-                        app:strokeColor="@color/maroon_primary"
-                        app:strokeWidth="1.5dp">
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="match_parent"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal"
-                            android:paddingHorizontal="12dp">
-
-                            <TextView
-                                android:id="@+id/tvChip2Text"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="E7"
-                                android:textColor="@color/maroon_primary"
-                                android:textSize="13sp"
-                                android:textStyle="bold" />
-
-                            <ImageView
-                                android:layout_width="14dp"
-                                android:layout_height="14dp"
-                                android:layout_marginStart="8dp"
-                                android:src="@drawable/ic_close"
-                                app:tint="@color/maroon_primary" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
+                        android:layout_height="wrap_content"
+                        android:text="Rp0"
+                        android:textColor="@color/maroon_primary"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
                 </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Ambil di konter bioskop sebelum masuk studio (opsional)"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvFoodAddon"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:nestedScrollingEnabled="false" />
             </LinearLayout>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- Bottom Sticky Price & Action Bar (From Image 2) -->
+    <!-- Bottom Sticky Price & Action Bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -321,7 +318,7 @@
                     android:id="@+id/tvBottomSeatsLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Seats E6, E7"
+                    android:text="Belum ada kursi"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -331,7 +328,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
-                    android:text="2 adults • Standard • 19:30"
+                    android:text="Ketuk kursi untuk memilih"
                     android:textColor="@color/text_muted"
                     android:textSize="11sp" />
             </LinearLayout>
@@ -340,9 +337,9 @@
                 android:id="@+id/tvSeatTotalPrice"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Rp50.000 total"
+                android:text="Rp0 total"
                 android:textColor="@color/text_primary"
-                android:textSize="18sp"
+                android:textSize="17sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -352,6 +349,7 @@
             android:layout_width="match_parent"
             android:layout_height="48dp"
             android:layout_marginTop="12dp"
+            android:enabled="false"
             android:text="CONTINUE TO PAYMENT  >"
             android:textSize="13sp"
             app:icon="@drawable/ic_ticket"
