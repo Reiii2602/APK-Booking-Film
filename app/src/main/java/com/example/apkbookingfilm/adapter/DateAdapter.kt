@@ -6,12 +6,16 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.apkbookingfilm.R
 import com.example.apkbookingfilm.databinding.ItemDateChipBinding
+import com.example.apkbookingfilm.util.AppLanguage
+import com.example.apkbookingfilm.util.AppToast
 
 data class DateItem(
     val dayName: String,
     val dayNumber: String,
     val fullDate: String,
-    val dayLabel: String = "NOV"
+    val dayLabel: String = "NOV",
+    val isPast: Boolean = false,
+    val isToday: Boolean = false
 )
 
 class DateAdapter(
@@ -40,6 +44,25 @@ class DateAdapter(
             binding.tvDayNumber.text = item.dayNumber
             binding.tvDayLabel.text = item.dayLabel
 
+            if (item.isPast) {
+                binding.dateChipRoot.setBackgroundResource(R.drawable.bg_chip_unselected)
+                binding.dateChipRoot.alpha = 0.38f
+                binding.tvDayName.setTextColor(ContextCompat.getColor(context, R.color.text_muted))
+                binding.tvDayNumber.setTextColor(ContextCompat.getColor(context, R.color.text_muted))
+                binding.tvDayLabel.setTextColor(ContextCompat.getColor(context, R.color.text_muted))
+                binding.root.setOnClickListener {
+                    AppToast.show(
+                        context,
+                        AppLanguage.tr(
+                            "Cannot select a past date (${item.fullDate})",
+                            "Tidak dapat memilih hari yang sudah lewat (${item.fullDate})"
+                        )
+                    )
+                }
+                return
+            }
+
+            binding.dateChipRoot.alpha = 1.0f
             if (isSelected) {
                 binding.dateChipRoot.setBackgroundResource(R.drawable.bg_chip_selected)
                 binding.tvDayName.setTextColor(ContextCompat.getColor(context, R.color.peach_card))
@@ -53,8 +76,10 @@ class DateAdapter(
             }
 
             binding.root.setOnClickListener {
+                val pos = bindingAdapterPosition
+                if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
                 val previousIndex = selectedIndex
-                selectedIndex = bindingAdapterPosition
+                selectedIndex = pos
                 notifyItemChanged(previousIndex)
                 notifyItemChanged(selectedIndex)
                 onDateSelected(item)

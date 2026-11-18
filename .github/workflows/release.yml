@@ -50,8 +50,8 @@ jobs:
           tag_name: ${{ steps.ver.outputs.tag }}
           name: "Cinema Booking ${{ steps.ver.outputs.tag }}"
           body: |
-            • Pengalih bahasa ID & ENG di halaman utama (bawaan awal ENG, bisa diubah kapan saja)
-            • Wajib login sebelum memilih kursi film maupun memesan makanan & minuman
-            • Tagihan pembayaran & struk khusus makanan/minuman kini terpisah rapi (bukan label film)
-            • Peta bioskop dapat digeser bebas dengan tombol zoom simetris & menu Buat Akun Baru
+            • Jadwal tayang realtime 7 hari (Senin – Minggu): hari sebelumnya otomatis nonaktif
+            • Jam tayang bioskop otomatis menyesuaikan waktu sekarang (jam yang lewat tidak bisa dipilih)
+            • Pengalih bahasa ID & ENG di halaman utama (bawaan awal ENG)
+            • Wajib login sebelum memilih kursi maupun memesan makanan & minuman dengan struk yang sesuai
           files: CinemaBooking-${{ steps.ver.outputs.tag }}.apk

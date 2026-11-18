@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.graphics.Color
+import android.graphics.Paint
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -34,6 +35,8 @@ import com.example.apkbookingfilm.util.AppLanguage
 import com.example.apkbookingfilm.util.AppToast
 import com.example.apkbookingfilm.util.TmdbImageLoader
 import com.google.android.material.card.MaterialCardView
+import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Locale
 
 class MovieDetailActivity : AppCompatActivity() {
@@ -43,7 +46,8 @@ class MovieDetailActivity : AppCompatActivity() {
 
     private var currentMovie: Movie? = null
     private var selectedCinema: Cinema? = null
-    private var selectedDate: String = "Fri, 06 Nov"
+    private var selectedDate: String = ""
+    private var isSelectedDateToday: Boolean = true
     private var selectedTime: String = ""
     private var selectedFormatFilter: String = "All formats"
 
@@ -162,21 +166,99 @@ class MovieDetailActivity : AppCompatActivity() {
     }
 
     private fun setupDates() {
-        val dateItems = listOf(
-            DateItem("FRI", "06", "Fri, 06 Nov", "TODAY"),
-            DateItem("SAT", "07", "Sat, 07 Nov", "NOV"),
-            DateItem("SUN", "08", "Sun, 08 Nov", "NOV"),
-            DateItem("MON", "09", "Mon, 09 Nov", "NOV"),
-            DateItem("TUE", "10", "Tue, 10 Nov", "NOV")
-        )
-        selectedDate = dateItems[0].fullDate
+        val now = Calendar.getInstance()
+        val todayYear = now.get(Calendar.YEAR)
+        val todayDayOfYear = now.get(Calendar.DAY_OF_YEAR)
+
+        val monthYearFmt = SimpleDateFormat("MMM yyyy", Locale.US)
+        binding.tvShowtimeMonthYear.text = monthYearFmt.format(now.time).uppercase(Locale.US)
+
+        // Hitung hari Senin s/d Minggu pada minggu berjalan secara realtime
+        val weekCal = (now.clone() as Calendar).apply {
+            val dow = get(Calendar.DAY_OF_WEEK)
+            val offsetFromMonday = if (dow == Calendar.SUNDAY) -6 else (Calendar.MONDAY - dow)
+            add(Calendar.DAY_OF_YEAR, offsetFromMonday)
+        }
+
+        val monthShortFmt = SimpleDateFormat("MMM", Locale.US)
+        val dateItems = mutableListOf<DateItem>()
+        var todayIndex = 0
+
+        for (i in 0 until 7) {
+            val calYear = weekCal.get(Calendar.YEAR)
+            val calDayOfYear = weekCal.get(Calendar.DAY_OF_YEAR)
+            val isPast = calYear < todayYear || (calYear == todayYear && calDayOfYear < todayDayOfYear)
+            val isToday = calYear == todayYear && calDayOfYear == todayDayOfYear
+            if (isToday) todayIndex = i
+
+            val dow = weekCal.get(Calendar.DAY_OF_WEEK)
+            val (dayUpper, dayTitle) = when (dow) {
+                Calendar.MONDAY -> AppLanguage.tr("MON", "SEN") to AppLanguage.tr("Mon", "Sen")
+                Calendar.TUESDAY -> AppLanguage.tr("TUE", "SEL") to AppLanguage.tr("Tue", "Sel")
+                Calendar.WEDNESDAY -> AppLanguage.tr("WED", "RAB") to AppLanguage.tr("Wed", "Rab")
+                Calendar.THURSDAY -> AppLanguage.tr("THU", "KAM") to AppLanguage.tr("Thu", "Kam")
+                Calendar.FRIDAY -> AppLanguage.tr("FRI", "JUM") to AppLanguage.tr("Fri", "Jum")
+                Calendar.SATURDAY -> AppLanguage.tr("SAT", "SAB") to AppLanguage.tr("Sat", "Sab")
+                else -> AppLanguage.tr("SUN", "MIN") to AppLanguage.tr("Sun", "Min")
+            }
+
+            val dayNumInt = weekCal.get(Calendar.DAY_OF_MONTH)
+            val dayNumStr = String.format(Locale.US, "%02d", dayNumInt)
+            val monthStr = monthShortFmt.format(weekCal.time)
+            val fullDate = "$dayTitle, $dayNumStr $monthStr"
+            val dayLabel = if (isToday) {
+                AppLanguage.tr("TODAY", "HARI INI")
+            } else {
+                monthStr.uppercase(Locale.US)
+            }
+
+            dateItems.add(
+                DateItem(
+                    dayName = dayUpper,
+                    dayNumber = dayNumStr,
+                    fullDate = fullDate,
+                    dayLabel = dayLabel,
+                    isPast = isPast,
+                    isToday = isToday
+                )
+            )
+            weekCal.add(Calendar.DAY_OF_YEAR, 1)
+        }
+
+        selectedDate = dateItems[todayIndex].fullDate
+        isSelectedDateToday = true
 
         binding.rvDateSelector.layoutManager =
             LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
-        binding.rvDateSelector.adapter = DateAdapter(dateItems, selectedIndex = 0) { item ->
+        binding.rvDateSelector.adapter = DateAdapter(dateItems, selectedIndex = todayIndex) { item ->
             selectedDate = item.fullDate
+            isSelectedDateToday = item.isToday
+            val cinema = selectedCinema
+            if (cinema != null) {
+                if (isSelectedDateToday && (selectedTime.isEmpty() || isShowtimePassed(selectedTime))) {
+                    selectedTime = findFirstActiveShowtime(cinema)
+                } else if (!isSelectedDateToday && selectedTime.isEmpty()) {
+                    selectedTime = cinema.showtimes.firstOrNull().orEmpty()
+                }
+            }
+            refreshShowtimeSelectionVisuals()
             updateBottomBar()
         }
+        binding.rvDateSelector.scrollToPosition((todayIndex - 1).coerceAtLeast(0))
+    }
+
+    private fun isShowtimePassed(timeStr: String): Boolean {
+        if (!isSelectedDateToday || timeStr.isBlank()) return false
+        val parts = timeStr.split(":")
+        val h = parts.getOrNull(0)?.toIntOrNull() ?: return false
+        val m = parts.getOrNull(1)?.toIntOrNull() ?: 0
+        val now = Calendar.getInstance()
+        val nowMins = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
+        return (h * 60 + m) <= nowMins
+    }
+
+    private fun findFirstActiveShowtime(cinema: Cinema): String {
+        return cinema.showtimes.take(4).firstOrNull { !isShowtimePassed(it) }.orEmpty()
     }
 
     private fun renderCinemasForSelectedCity() {
@@ -193,13 +275,13 @@ class MovieDetailActivity : AppCompatActivity() {
             }.ifEmpty { allCityCinemas }
         }
 
-        // Pastikan cinema & jam default terpilih valid
+        // Pastikan cinema & jam default terpilih valid dan belum lewat jam sekarang
         if (selectedCinema == null || filtered.none { it.id == selectedCinema?.id }) {
             selectedCinema = filtered.firstOrNull()
         }
         val activeCinema = selectedCinema
-        if (activeCinema != null && (selectedTime.isEmpty() || !activeCinema.showtimes.contains(selectedTime))) {
-            selectedTime = activeCinema.showtimes.getOrNull(1) ?: activeCinema.showtimes.firstOrNull() ?: "19:30"
+        if (activeCinema != null && (selectedTime.isEmpty() || !activeCinema.showtimes.contains(selectedTime) || isShowtimePassed(selectedTime))) {
+            selectedTime = findFirstActiveShowtime(activeCinema)
         }
 
         val container = binding.layoutCinemaShowtimes
@@ -235,6 +317,16 @@ class MovieDetailActivity : AppCompatActivity() {
                 slotViewRefs.add(ref)
 
                 slotBinding.root.setOnClickListener {
+                    if (isShowtimePassed(timeStr)) {
+                        AppToast.show(
+                            this,
+                            AppLanguage.tr(
+                                "Showtime $timeStr has already passed",
+                                "Jadwal jam $timeStr sudah lewat"
+                            )
+                        )
+                        return@setOnClickListener
+                    }
                     selectedCinema = cinema
                     selectedTime = timeStr
                     refreshShowtimeSelectionVisuals()
@@ -260,17 +352,33 @@ class MovieDetailActivity : AppCompatActivity() {
         val density = resources.displayMetrics.density
 
         slotViewRefs.forEach { ref ->
-            val isSelected = ref.cinema.id == selectedCinema?.id && ref.time == selectedTime
+            val isPassed = isShowtimePassed(ref.time)
+            val isSelected = !isPassed && ref.cinema.id == selectedCinema?.id && ref.time == selectedTime
             val isCinemaSelected = ref.cinema.id == selectedCinema?.id
             val priceStr = MovieRepository.formatRupiah(ref.cinema.ticketPrice)
 
-            if (isSelected) {
+            if (isPassed) {
+                ref.binding.root.setBackgroundResource(R.drawable.bg_chip_unselected)
+                ref.binding.root.alpha = 0.42f
+                ref.binding.tvSlotTime.setTextColor(muted)
+                ref.binding.tvSlotTime.paintFlags =
+                    ref.binding.tvSlotTime.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+                ref.binding.tvSlotSub.text = AppLanguage.tr("PASSED", "LEWAT")
+                ref.binding.tvSlotSub.setTextColor(muted)
+                ref.binding.tvSlotSub.paint.isFakeBoldText = false
+            } else if (isSelected) {
+                ref.binding.root.alpha = 1.0f
+                ref.binding.tvSlotTime.paintFlags =
+                    ref.binding.tvSlotTime.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
                 ref.binding.root.setBackgroundResource(R.drawable.bg_chip_selected)
                 ref.binding.tvSlotTime.setTextColor(white)
-                ref.binding.tvSlotSub.text = "✓ SELECTED"
+                ref.binding.tvSlotSub.text = AppLanguage.tr("✓ SELECTED", "✓ DIPILIH")
                 ref.binding.tvSlotSub.setTextColor(peach)
                 ref.binding.tvSlotSub.paint.isFakeBoldText = true
             } else {
+                ref.binding.root.alpha = 1.0f
+                ref.binding.tvSlotTime.paintFlags =
+                    ref.binding.tvSlotTime.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
                 ref.binding.root.setBackgroundResource(R.drawable.bg_chip_unselected)
                 ref.binding.tvSlotTime.setTextColor(chipText)
                 ref.binding.tvSlotSub.text = priceStr
@@ -286,7 +394,12 @@ class MovieDetailActivity : AppCompatActivity() {
     private fun updateBottomBar() {
         val cinema = selectedCinema ?: return
         val fmt = cinema.formats.firstOrNull() ?: "2D"
-        binding.tvBottomShowtimeDate.text = "$selectedDate • $selectedTime"
+        val timeDisplay = if (selectedTime.isEmpty() || isShowtimePassed(selectedTime)) {
+            AppLanguage.tr("No active slot", "Jadwal lewat")
+        } else {
+            selectedTime
+        }
+        binding.tvBottomShowtimeDate.text = "$selectedDate • $timeDisplay"
         binding.tvBottomShowtimeVenue.text = "${cinema.name} • $fmt"
         binding.tvBottomPrice.text = "${MovieRepository.formatRupiah(cinema.ticketPrice)}/${AppLanguage.tr("adult", "dewasa")}"
     }
@@ -371,6 +484,16 @@ class MovieDetailActivity : AppCompatActivity() {
         }
 
         binding.btnChooseSeats.setOnClickListener {
+            if (selectedTime.isEmpty() || isShowtimePassed(selectedTime)) {
+                AppToast.show(
+                    this,
+                    AppLanguage.tr(
+                        "Selected showtime has passed. Please pick an active time or tomorrow's date.",
+                        "Jadwal hari ini sudah lewat. Silakan pilih jam yang aktif atau hari besok."
+                    )
+                )
+                return@setOnClickListener
+            }
             val movie = currentMovie ?: return@setOnClickListener
             val cinema = selectedCinema ?: repository.cinemas[0]
             val launchSeatSelection = {
@@ -378,7 +501,7 @@ class MovieDetailActivity : AppCompatActivity() {
                     putExtra(SeatSelectionActivity.EXTRA_MOVIE, movie)
                     putExtra(SeatSelectionActivity.EXTRA_CINEMA, cinema)
                     putExtra(SeatSelectionActivity.EXTRA_DATE, selectedDate)
-                    putExtra(SeatSelectionActivity.EXTRA_TIME, selectedTime.ifEmpty { "19:30" })
+                    putExtra(SeatSelectionActivity.EXTRA_TIME, selectedTime)
                 }
                 startActivity(intent)
             }
