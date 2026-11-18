@@ -61,10 +61,22 @@ class ProfileFragment : Fragment() {
     fun showLoginBottomSheet() {
         val existing = parentFragmentManager.findFragmentByTag(LoginBottomSheet.TAG)
         if (existing == null) {
-            val bottomSheet = LoginBottomSheet {
-                updateProfileUI()
-            }
+            val bottomSheet = LoginBottomSheet(
+                onLoginSuccess = { updateProfileUI() },
+                onSwitchToRegister = { showCreateAccountBottomSheet() }
+            )
             bottomSheet.show(parentFragmentManager, LoginBottomSheet.TAG)
+        }
+    }
+
+    fun showCreateAccountBottomSheet() {
+        val existing = parentFragmentManager.findFragmentByTag(CreateAccountBottomSheet.TAG)
+        if (existing == null) {
+            val bottomSheet = CreateAccountBottomSheet(
+                onRegisterSuccess = { updateProfileUI() },
+                onSwitchToLogin = { showLoginBottomSheet() }
+            )
+            bottomSheet.show(parentFragmentManager, CreateAccountBottomSheet.TAG)
         }
     }
 
@@ -152,7 +164,7 @@ class ProfileFragment : Fragment() {
 
         // Not Logged In State buttons
         binding.btnSignInWhite.setOnClickListener { showLoginBottomSheet() }
-        binding.btnCreateAccount.setOnClickListener { showLoginBottomSheet() }
+        binding.btnCreateAccount.setOnClickListener { showCreateAccountBottomSheet() }
 
         binding.btnGoogleQuickLogin.setOnClickListener {
             repository.login("Cinema User", "user@gmail.com", "Google")

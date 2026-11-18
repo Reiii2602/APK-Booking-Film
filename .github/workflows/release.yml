@@ -31,7 +31,8 @@ jobs:
           VC=$((GITHUB_RUN_NUMBER + 1))
           echo "code=$VC" >> "$GITHUB_OUTPUT"
           echo "tag=v1.0.$VC" >> "$GITHUB_OUTPUT"
-          echo "msg=$(git log -1 --pretty=%B | head -n 10)" >> "$GITHUB_OUTPUT"
+          RAW_MSG=$(git log -1 --pretty=%s)
+          echo "msg=$RAW_MSG" >> "$GITHUB_OUTPUT"
 
       - name: Build signed Release APK
         run: ./gradlew assembleRelease -PversionCode=${{ steps.ver.outputs.code }} --no-daemon
@@ -46,8 +47,10 @@ jobs:
           tag_name: ${{ steps.ver.outputs.tag }}
           name: "Cinema Booking ${{ steps.ver.outputs.tag }}"
           body: |
-            Update otomatis dari push ke `main` (${{ github.sha }}).
+            ✨ Pembaruan Cinema Booking ${{ steps.ver.outputs.tag }}
 
-            Perubahan terbaru:
+            Catatan Perubahan:
             ${{ steps.ver.outputs.msg }}
+
+            Update langsung menimpa aplikasi lama tanpa perlu uninstall, seluruh data dan tiket kamu tetap tersimpan aman.
           files: CinemaBooking-${{ steps.ver.outputs.tag }}.apk

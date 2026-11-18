@@ -11,7 +11,8 @@ import com.example.apkbookingfilm.util.AppToast
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
 class LoginBottomSheet(
-    private val onLoginSuccess: () -> Unit
+    private val onLoginSuccess: () -> Unit,
+    private val onSwitchToRegister: (() -> Unit)? = null
 ) : BottomSheetDialogFragment() {
 
     private var _binding: BottomSheetLoginBinding? = null
@@ -64,6 +65,12 @@ class LoginBottomSheet(
             AppToast.show(requireContext(), "Selamat datang, $name!")
             onLoginSuccess()
             dismiss()
+        }
+
+        // Switch to Register
+        binding.tvSwitchToRegister.setOnClickListener {
+            dismiss()
+            onSwitchToRegister?.invoke()
         }
     }
 

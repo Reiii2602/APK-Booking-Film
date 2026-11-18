@@ -19,11 +19,22 @@
         android:paddingEnd="16dp"
         android:paddingBottom="8dp">
 
-        <ImageView
-            android:id="@+id/ivAppToastLogo"
-            android:layout_width="26dp"
-            android:layout_height="26dp"
-            android:src="@mipmap/ic_launcher_round" />
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            app:cardCornerRadius="14dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/gold_star"
+            app:strokeWidth="1.2dp"
+            app:cardBackgroundColor="@color/maroon_primary">
+
+            <ImageView
+                android:id="@+id/ivAppToastLogo"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@mipmap/ic_launcher_round" />
+        </com.google.android.material.card.MaterialCardView>
 
         <TextView
             android:id="@+id/tvAppToastMessage"

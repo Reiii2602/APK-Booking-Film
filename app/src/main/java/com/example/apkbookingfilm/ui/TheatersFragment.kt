@@ -116,13 +116,30 @@ class TheatersFragment : Fragment() {
         renderMapMarkers(binding.webTheaterMap, city, cityCinemas)
     }
 
-    @SuppressLint("SetJavaScriptEnabled")
+    @SuppressLint("SetJavaScriptEnabled", "ClickableViewAccessibility")
     private fun setupMapWebView(webView: WebView) {
         webView.setBackgroundColor(Color.TRANSPARENT)
         webView.settings.javaScriptEnabled = true
         webView.settings.domStorageEnabled = true
         webView.settings.userAgentString = "CinemaBookingAndroid/1.0 (https://github.com/Reiii2602/APK-Booking-Film)"
         webView.webViewClient = WebViewClient()
+        webView.isVerticalScrollBarEnabled = false
+        webView.isHorizontalScrollBarEnabled = false
+
+        // Izinkan interaksi drag/pan peta tanpa dicegat oleh NestedScrollView induk
+        webView.setOnTouchListener { v, event ->
+            when (event.actionMasked) {
+                android.view.MotionEvent.ACTION_DOWN,
+                android.view.MotionEvent.ACTION_MOVE -> {
+                    v.parent?.requestDisallowInterceptTouchEvent(true)
+                }
+                android.view.MotionEvent.ACTION_UP,
+                android.view.MotionEvent.ACTION_CANCEL -> {
+                    v.parent?.requestDisallowInterceptTouchEvent(false)
+                }
+            }
+            false
+        }
     }
 
     private fun renderMapMarkers(webView: WebView, city: String, cinemas: List<Cinema>) {
@@ -144,10 +161,12 @@ class TheatersFragment : Fragment() {
               <style>
                 html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#F5EFEA; font-family:-apple-system,Roboto,sans-serif; user-select:none; }
                 canvas { width:100%; height:100%; display:block; touch-action:none; }
-                #cityBadge { position:absolute; top:10px; left:10px; background:rgba(255,255,255,0.94); color:#1D1917; font-size:11px; font-weight:700; padding:5px 10px; border-radius:14px; border:1px solid #E8D4C8; box-shadow:0 2px 6px rgba(0,0,0,0.08); }
-                #pinPopup { display:none; position:absolute; top:10px; right:10px; max-width:58%; background:#781D2E; color:#FFF; font-size:11px; padding:6px 10px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.18); }
-                #zoomBox { position:absolute; bottom:10px; left:10px; display:flex; gap:4px; }
-                .zbtn { width:26px; height:26px; border-radius:8px; background:rgba(255,255,255,0.95); border:1px solid #E8D4C8; color:#1D1917; font-weight:700; font-size:14px; line-height:24px; text-align:center; }
+                #cityBadge { position:absolute; top:10px; left:10px; background:rgba(255,255,255,0.95); color:#1D1917; font-size:11px; font-weight:700; padding:5px 10px; border-radius:14px; border:1px solid #E8D4C8; box-shadow:0 2px 6px rgba(0,0,0,0.08); pointer-events:none; }
+                #pinPopup { display:none; position:absolute; top:10px; right:10px; max-width:58%; background:#781D2E; color:#FFF; font-size:11px; padding:6px 10px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.18); pointer-events:none; }
+                #zoomBox { position:absolute; bottom:12px; left:12px; display:flex; flex-direction:row; gap:8px; z-index:20; }
+                .zbtn { width:34px; height:34px; border-radius:50%; background:#FFFFFF; border:1.5px solid #E8D4C8; box-shadow:0 2px 6px rgba(0,0,0,0.15); display:flex; align-items:center; justify-content:center; cursor:pointer; user-select:none; -webkit-tap-highlight-color:transparent; padding:0; margin:0; box-sizing:border-box; }
+                .zbtn:active { background:#F5EFEA; transform:scale(0.92); }
+                .zbtn svg { display:block; }
               </style>
             </head>
             <body>
@@ -155,8 +174,12 @@ class TheatersFragment : Fragment() {
               <div id="cityBadge">$safeCity • ${cinemas.size} Bioskop</div>
               <div id="pinPopup"></div>
               <div id="zoomBox">
-                <div class="zbtn" onclick="changeZoom(1.25)">+</div>
-                <div class="zbtn" onclick="changeZoom(0.8)">-</div>
+                <div class="zbtn" onclick="changeZoom(1.25)" title="Perbesar">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#781D2E" stroke-width="3.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </div>
+                <div class="zbtn" onclick="changeZoom(0.8)" title="Perkecil">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#781D2E" stroke-width="3.2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </div>
               </div>
               <script>
                 var canvas = document.getElementById('c');
@@ -281,41 +304,87 @@ class TheatersFragment : Fragment() {
                 }
 
                 function changeZoom(factor) {
-                  zoom = Math.max(0.6, Math.min(3.0, zoom * factor));
+                  zoom = Math.max(0.5, Math.min(3.5, zoom * factor));
                   draw();
                 }
 
                 var dragging = false, sx = 0, sy = 0, moved = false;
+                var pinchDist = 0;
+
                 canvas.addEventListener('touchstart', function(e) {
                   if (e.touches.length === 1) {
-                    dragging = true; moved = false;
-                    sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+                    dragging = true;
+                    moved = false;
+                    sx = e.touches[0].clientX;
+                    sy = e.touches[0].clientY;
+                  } else if (e.touches.length === 2) {
+                    dragging = false;
+                    pinchDist = Math.hypot(
+                      e.touches[0].clientX - e.touches[1].clientX,
+                      e.touches[0].clientY - e.touches[1].clientY
+                    );
                   }
-                });
+                }, {passive: false});
+
                 canvas.addEventListener('touchmove', function(e) {
                   if (dragging && e.touches.length === 1) {
                     var dx = e.touches[0].clientX - sx;
                     var dy = e.touches[0].clientY - sy;
-                    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
-                    panX += dx; panY += dy;
-                    sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+                    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
+                    panX += dx;
+                    panY += dy;
+                    sx = e.touches[0].clientX;
+                    sy = e.touches[0].clientY;
+                    draw();
+                    e.preventDefault();
+                  } else if (e.touches.length === 2) {
+                    var dist = Math.hypot(
+                      e.touches[0].clientX - e.touches[1].clientX,
+                      e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    if (pinchDist > 0) {
+                      var factor = dist / pinchDist;
+                      zoom = Math.max(0.5, Math.min(3.5, zoom * factor));
+                      draw();
+                    }
+                    pinchDist = dist;
+                    e.preventDefault();
+                  }
+                }, {passive: false});
+
+                canvas.addEventListener('touchend', function(e) {
+                  if (e.touches.length < 2) pinchDist = 0;
+                  if (e.touches.length === 0) {
+                    dragging = false;
+                    if (!moved && e.changedTouches.length === 1) {
+                      var rect = canvas.getBoundingClientRect();
+                      var tx = e.changedTouches[0].clientX - rect.left;
+                      var ty = e.changedTouches[0].clientY - rect.top;
+                      var best = -1, bestD = 32;
+                      pts.forEach(function(p, i) {
+                        var d = Math.hypot(p._x - tx, p._y - ty);
+                        if (d < bestD) { bestD = d; best = i; }
+                      });
+                      if (best >= 0) selectPin(best);
+                    }
+                  }
+                });
+
+                // Support mouse pan for desktop & emulators
+                var mousedown = false, mx = 0, my = 0;
+                canvas.addEventListener('mousedown', function(e) {
+                  mousedown = true; mx = e.clientX; my = e.clientY;
+                });
+                window.addEventListener('mousemove', function(e) {
+                  if (mousedown) {
+                    panX += e.clientX - mx;
+                    panY += e.clientY - my;
+                    mx = e.clientX;
+                    my = e.clientY;
                     draw();
                   }
                 });
-                canvas.addEventListener('touchend', function(e) {
-                  dragging = false;
-                  if (!moved && e.changedTouches.length === 1) {
-                    var rect = canvas.getBoundingClientRect();
-                    var tx = e.changedTouches[0].clientX - rect.left;
-                    var ty = e.changedTouches[0].clientY - rect.top;
-                    var best = -1, bestD = 28;
-                    pts.forEach(function(p, i) {
-                      var d = Math.hypot(p._x - tx, p._y - ty);
-                      if (d < bestD) { bestD = d; best = i; }
-                    });
-                    if (best >= 0) selectPin(best);
-                  }
-                });
+                window.addEventListener('mouseup', function() { mousedown = false; });
 
                 window.addEventListener('resize', resize);
                 resize();

@@ -249,9 +249,18 @@ class HomeFragment : Fragment() {
 
     private fun setupListeners() {
         binding.btnLoginTopHome.setOnClickListener {
-            LoginBottomSheet {
-                setupGreeting()
-            }.show(parentFragmentManager, LoginBottomSheet.TAG)
+            val showRegister: () -> Unit = {
+                CreateAccountBottomSheet(
+                    onRegisterSuccess = { setupGreeting() },
+                    onSwitchToLogin = {
+                        LoginBottomSheet(onLoginSuccess = { setupGreeting() }).show(parentFragmentManager, LoginBottomSheet.TAG)
+                    }
+                ).show(parentFragmentManager, CreateAccountBottomSheet.TAG)
+            }
+            LoginBottomSheet(
+                onLoginSuccess = { setupGreeting() },
+                onSwitchToRegister = showRegister
+            ).show(parentFragmentManager, LoginBottomSheet.TAG)
         }
 
         binding.cardUserAvatarHome.setOnClickListener {

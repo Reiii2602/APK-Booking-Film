@@ -67,7 +67,7 @@ object UpdateNotifier {
             .setContentTitle("Update tersedia \uD83C\uDF9F\uFE0F")
             .setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(
-                if (info.changelog.isNotEmpty()) "$text\n\n${info.changelog.take(300)}" else text
+                if (info.changelog.isNotEmpty()) "$text\n\n${UpdateBottomSheet.formatFriendlyChangelog(info.changelog).take(300)}" else text
             ))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
